@@ -1,0 +1,140 @@
+-----------------------------
+Project Gemini
+"Speculative specification"
+v0.0.1, June 21st 2018
+-----------------------------
+
+This is a very rough sketch of how I imagine the actual spec for
+Project Gemini might look, based on my current set of ideas/decisions.
+Don't code to this "spec-spec" unless you are very keen to experiment
+and won't mind having to make frequent changes as things evolve.
+
+This is provided mostly so that people can quickly get up to speed on
+what I'm thinking without having to read lots and lots of old phlog
+posts and keep notes.
+
+Feedback on any part of this is extremely welcome, please email
+solderpunk@sdf.org.
+
+-----------------------------
+
+Gemini is a client-server protocol featuring request-response
+transactions, broadly similar to gopher or HTTP.  Connections are
+closed at the end of a single transaction and cannot be reused.  When
+Gemini is served over TCP/IP, servers should listen on port 1965 (the
+first manned Gemini mission, Gemini 3, flew in March '65).  This is an
+unprivileged port, so it's very easy to run a server as a "nobody"
+user, even if e.g. the server is written in Go and so can't drop
+priveleges in the traditional fashion.
+
+There is currently one kind of Gemini transaction defined:
+
+C:   Opens TLS connection
+S:   Accepts connection
+C/S: Complete TLs handshake
+C:   Validates TLS connection
+C:   Sends request string (one CRLF terminated line)
+S:   Sends response header (one CRFL terminated line), closes connection
+     under abnormal conditions (see below)
+S:   Sends response body (text or binary data)
+S:   Closes connection when done
+C:   Handles response
+
+# TLS
+
+Use of TLS is mandatory.  Minimum allowed version 1.3?
+
+Clients can validate TLS connections however they like (including not
+at all) but the strongly recommended approach is to implement a
+lightweight TOFU/pinning system which treats self-signed certificates
+as first- class citizens.  This greatly reduces TLS overhead on the
+network (only one cert needs to be sent, not a whole chain) and
+lowers the barrier to entry for setting up a Gemini site (no need to
+pay a CA or setup a Let's Encrypt cron job, just make a cert and go).
+
+# Requests
+
+Request strings look like this:
+
+<PATH><CR><LF>
+
+<PATH> is:
+
+ * UTF-8 encoded text
+ * 1024 bytes long at max (too high? too low?)
+ * conceptually equivalent to a gopher selector or a HTTP path
+
+# Responses
+
+## Response headers
+
+Response headers look like this:
+
+<STATUS><TAB><META><CR><LF>
+
+<STATUS> is a single UTF-8 byte from the following range:
+
+ "2" - Success, everything is fine, response follows (cf HTTP 200)
+ "4" - Not found, requested <PATH> does not exit (cf HTTP 404)
+ "5" - Server error, something went wrong, wasn't your fault (cf HTTP
+       500)
+
+(more may follow.  There WILL be fewer than 10)
+
+Status codes under consideration, not guaranteed, feedback welcome:
+
+ "3" - Moved (cf HTTP 301)
+ "9" - Slow down, cowboy (cf HTTP 429)
+
+If a server sends a status byte other than "2" (success) it MUST close
+the connection after the header and not send a response body.
+
+If a server sends a status byte not from the above list, a compliant
+client MUST treat this as equivalent to "5" (server error) and, if the
+server does not close the connection after the non-standard status
+line, the client MUST close the connection itself and not process the
+accompanying response body (Thou shalt not extend Gemini!).
+
+<META> is a UTF-8 encoded string of maximum length 1024, whose meaning
+is <STATUS> dependent:
+
+If <STATUS> = 2, then <META> is a MIME type.  The full-flavoured
+RFC-defined type, with things like "text/plain; charset=utf-8", so it
+can tell you everything you need to know to correctly consume the
+response body.
+
+If a MIME type begins with "text/" and no charset is explicitly given,
+the charset should be assumed to be UTF-8.  Compliant clients MUST
+support UTF-8-encoded text/* responses.  Clients MAY optionally
+support other encodings.  Clients receiving a response in a charset
+they cannot decode SHOULD gracefully inform the user what happened.
+
+If <META> is an empty string, the mimetype MUST default to
+"text/gemini; charset=utf-8".
+
+If <STATUS> != 2, <META> is some human-friendly extra information
+which clients MAY show their user (like what comes after a HTTP status
+code).
+
+## Response bodies
+
+Response bodies are just raw content, text or binary, ala gopher.  The
+server closes the connection after the final byte, there is no "end of
+response" signal like gopher's lonely dot.
+
+# Response handling
+
+Response handling by clients should be informed by the provided MIME
+type information.  Gemini defines one MIME type of its own
+(text/gemini) whose handling is discussed below.  In all other cases,
+clients should do "something sensible" based on the MIME type.
+Minimalistic clients might adopt a strategy of printing all other
+text/* responses to the screen without formatting and saving all
+non-text responses to the disk and that's it.  Clients for unix
+systems may consult /etc/mailcap to find installed programs for
+handling non-text types.
+
+Response bodies of type text/gemini are...
+
+...some kind of very lightweight hypertext *thing*.  Maybe kinda like
+gophermaps?  Very under development...
