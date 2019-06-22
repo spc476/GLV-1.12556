@@ -1,0 +1,97 @@
+#!/usr/bin/env lua
+-- ************************************************************************
+--
+--    Client program
+--    Copyright 2019 by Sean Conner.  All Rights Reserved.
+--
+--    This program is free software: you can redistribute it and/or modify
+--    it under the terms of the GNU General Public License as published by
+--    the Free Software Foundation, either version 3 of the License, or
+--    (at your option) any later version.
+--
+--    This program is distributed in the hope that it will be useful,
+--    but WITHOUT ANY WARRANTY; without even the implied warranty of
+--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--    GNU General Public License for more details.
+--
+--    You should have received a copy of the GNU General Public License
+--    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--
+--    Comments, questions and criticisms can be sent to: sean@conman.org
+--
+-- ************************************************************************
+-- luacheck: ignore 611
+
+local nfl    = require "org.conman.nfl"
+local tls    = require "org.conman.nfl.tls"
+local url    = require "org.conman.parsers.url"
+local getopt = require "org.conman.getopt".getopt
+
+-- ************************************************************************
+
+local function normalize_directory(path)
+  local new = {}
+  for _,segment in ipairs(path) do
+    if segment == ".." then
+      table.remove(new)
+    elseif segment ~= "." then
+      table.insert(new,segment)
+    end
+  end
+  
+  return "/" .. table.concat(new,"/")
+end
+
+-- ************************************************************************
+
+local function main(cert,key,location)
+  local loc = url:match(location)
+  
+  local ios = tls.connect(loc.host,loc.port,nil,function(conf)
+    if cert then conf:cert_file(cert) end
+    if key  then conf:key_file(key)   end
+    return conf:protocols "all"
+  end)
+  
+  if not ios then
+    io.stderr:write("cannot connect to %s\n",loc.host)
+    ios:close()
+    return
+  end
+  
+  ios:write(normalize_directory(loc.path),"\r\n")
+  io.stdout:write(ios:read("*a"),"\n")
+  ios:close()
+end
+
+-- ************************************************************************
+
+local CERT , KEY , URL do
+  local usage = [[
+usage: %s [options] url
+        -c | --cert certificate
+        -k | --key  keyfile
+        -h | --help this text
+]]
+
+  local opts =
+  {
+    { "c" , "cert" , true  , function(c) CERT = c end },
+    { "k" , "key"  , true  , function(k) KEY  = k end },
+    { 'h' , "help" , false , function()
+        io.stderr:write(string.format(usage,arg[0]))
+        os.exit(false,true)
+      end
+    },
+  }
+  
+  if #arg == 0 then
+    io.stderr:write(string.format(usage,arg[0]))
+    os.exit(false,true)
+  end
+  
+  URL = arg[getopt(arg,opts)]
+end
+
+nfl.spawn(main,CERT,KEY,URL)
+nfl.client_eventloop()
