@@ -86,7 +86,7 @@ end
 -- ************************************************************************
 
 local function authorized(ios,dir)
-  local pfname = dir .. "/.private"
+  local pfname   = dir .. "/.private"
   local okay,err = fsys.access(pfname,'r')
   
   -- --------------------------------------------------------------
