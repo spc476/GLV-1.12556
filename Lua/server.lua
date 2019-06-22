@@ -166,17 +166,25 @@ local function main(ios)
   
   for dir in descend_path(path) do
     -- ------------------------
-    -- Throw in some redirects
+    -- Throw in some redirects and gones
     -- ------------------------
     
     if dir == "./source-code" then
       ios:write("301\t/sourcecode/\r\n")
       ios:close()
+      return
     end
     
     if dir == "./obsolete" then
       ios:write("301\tgemini://example.com/documents/gemini/\r\n")
       ios:close()
+      return
+    end
+    
+    if dir == "./no-longer-here" then
+      ios:write("410\tNo Longer here\r\n")
+      ios:close()
+      return
     end
     
     local info = fsys.stat(dir)
