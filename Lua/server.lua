@@ -83,6 +83,8 @@ local cert_parse do
   cert_parse   = Cf(Ct"" * record^1,function(acc,n,v) acc[n] = v return acc end)
 end
 
+-- ************************************************************************
+
 local function authorized(ios,dir)
   local pfname = dir .. "/.private"
   local okay,err = fsys.access(pfname,'r')
