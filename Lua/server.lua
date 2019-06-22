@@ -114,8 +114,8 @@ local function authorized(ios,dir)
     return false,461,"Expired Certificate"
   end
   
-  local issuer    = cert_parse:match(ios.__ctx:peer_cert_issuer())
-  local subject   = cert_parse:match(ios.__ctx:peer_cert_subject())
+  local issuer  = cert_parse:match(ios.__ctx:peer_cert_issuer())
+  local subject = cert_parse:match(ios.__ctx:peer_cert_subject())
   
   local check = loadfile(pfname,"t",{})
   if not check then
@@ -161,6 +161,22 @@ local function main(ios)
   
   syslog('info',"host=%s request=%q",tostring(ios.__remote),request)
   local loc  = url:match(request)
+  
+  -- ---------------------------------------------------------------------
+  -- I actually accept URLs as the request---this way, if we support more
+  -- than one host, we can switch among them on the server.  We don't
+  -- support that here, since I haven't learned how to generate a server
+  -- certificate for more than one host.  But it *could* be a possiblity.
+  -- ---------------------------------------------------------------------
+  
+  if loc.scheme and loc.scheme ~= 'gemini'
+  or loc.host   and loc.host   ~= CONF.network.host
+  or loc.port   and loc.port   ~= CONF.network.port then
+    ios:write("400\tBad Request\r\n")
+    ios:close()
+    return
+  end
+  
   local path = normalize_directory(loc.path)
   local final = "."
   
