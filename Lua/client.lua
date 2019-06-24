@@ -44,12 +44,13 @@ end
 
 -- ************************************************************************
 
-local function main(cert,key,location)
+local function main(cert,key,nover,skip,location)
   local loc = url:match(location)
   
   local ios = tls.connect(loc.host,loc.port,nil,function(conf)
-    if cert then conf:cert_file(cert) end
-    if key  then conf:key_file(key)   end
+    if cert  then conf:cert_file(cert)           end
+    if key   then conf:key_file(key)             end
+    if nover then conf:insecure_no_verify_cert() end
     return conf:protocols "all"
   end)
   
@@ -60,25 +61,30 @@ local function main(cert,key,location)
   end
   
   ios:write(normalize_directory(loc.path),"\r\n")
+  if skip then ios:read("*l") end
   io.stdout:write(ios:read("*a"),"\n")
   ios:close()
 end
 
 -- ************************************************************************
 
-local CERT , KEY , URL do
+local CERT , KEY , NOVER , SKIP , URL do
   local usage = [[
 usage: %s [options] url
         -c | --cert certificate
         -k | --key  keyfile
+        -n | --noverify
+        -s | --skipheader
         -h | --help this text
 ]]
 
   local opts =
   {
-    { "c" , "cert" , true  , function(c) CERT = c end },
-    { "k" , "key"  , true  , function(k) KEY  = k end },
-    { 'h' , "help" , false , function()
+    { "c" , "cert"     , true    , function(c) CERT  = c    end },
+    { "k" , "key"      , true    , function(k) KEY   = k    end },
+    { "n" , "noverify" , false   , function()  NOVER = true end },
+    { "s" , "skipheader" , false , function()  SKIP  = true end },
+    { 'h' , "help"     , false   , function()
         io.stderr:write(string.format(usage,arg[0]))
         os.exit(false,true)
       end
@@ -93,5 +99,5 @@ usage: %s [options] url
   URL = arg[getopt(arg,opts)]
 end
 
-nfl.spawn(main,CERT,KEY,URL)
+nfl.spawn(main,CERT,KEY,NOVER,SKIP,URL)
 nfl.client_eventloop()
