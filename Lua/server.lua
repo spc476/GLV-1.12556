@@ -315,6 +315,7 @@ local function main(ios)
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
       ios:write("\t",entry,"\t",makelink(final,entry),"\r\n")
+      ios:write("[",entry,"|",makelink(final,entry),"]\r\n")
     end
   end
   
