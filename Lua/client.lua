@@ -73,8 +73,7 @@ local function main(cert,key,nover,skip,location)
   end)
   
   if not ios then
-    io.stderr:write("cannot connect to %s\n",loc.host)
-    ios:close()
+    io.stderr:write("cannot connect to ",loc.host,"\n")
     return
   end
   ios:write(normalize_directory(loc.path),"\r\n")
