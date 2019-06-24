@@ -26,6 +26,25 @@ local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
 local url    = require "org.conman.parsers.url"
 local getopt = require "org.conman.getopt".getopt
+local lpeg   = require "lpeg"
+
+-- ************************************************************************
+-- Because we're sending a URL, we need to properly escape the path in case
+-- it contains characters from the 'reserved' set of characters for URLs.
+-- ************************************************************************
+
+local safe_segment do
+  local Cs = lpeg.Cs
+  local P  = lpeg.P
+  local S  = lpeg.S
+  
+  local char   = S":/?#[]@|"
+               / function(c)
+                   return string.format("%%%02X",string.byte(c))
+                 end
+               + P(1)
+  safe_segment = Cs(char^1)
+end
 
 -- ************************************************************************
 
@@ -35,7 +54,7 @@ local function normalize_directory(path)
     if segment == ".." then
       table.remove(new)
     elseif segment ~= "." then
-      table.insert(new,segment)
+      table.insert(new,safe_segment:match(segment))
     end
   end
   
@@ -46,7 +65,6 @@ end
 
 local function main(cert,key,nover,skip,location)
   local loc = url:match(location)
-  
   local ios = tls.connect(loc.host,loc.port,nil,function(conf)
     if cert  then conf:cert_file(cert)           end
     if key   then conf:key_file(key)             end
@@ -59,7 +77,6 @@ local function main(cert,key,nover,skip,location)
     ios:close()
     return
   end
-  
   ios:write(normalize_directory(loc.path),"\r\n")
   if skip then ios:read("*l") end
   io.stdout:write(ios:read("*a"),"\n")
