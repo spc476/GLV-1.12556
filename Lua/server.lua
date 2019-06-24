@@ -139,7 +139,14 @@ local function copy_file(ios,name)
   local f = io.open(name,"rb")
   repeat
     local data = f:read(8192)
-    if data then ios:write(data) end
+    if data then
+      local okay,err = ios:write(data)
+      if not okay then
+        syslog('error',"ios:write() = %s",err)
+        f:close()
+        return
+      end
+    end
   until not data
   f:close()
 end
