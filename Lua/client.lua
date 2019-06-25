@@ -83,7 +83,6 @@ local statparse do
                  + P"429"    * Cc'client'   * Cc'slow-down'
                  + P"460"    * Cc'client'   * Cc'future-certificate'
                  + P"461"    * Cc'client'   * Cc'expired-certificate'
-                 + P"500"    * Cc'server'   * Cc'server'
                  
                  -- ----------------
                  -- Catch-all path
