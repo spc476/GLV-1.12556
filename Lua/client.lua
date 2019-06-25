@@ -76,13 +76,16 @@ local statparse do
   local DD       = R"09" * R"09"
   local status   = P"200"    * Cc'okay'     * Cc'content'
                  + P"301"    * Cc'redirect' * Cc'permanent'
-                 + P"401"    * Cc'client'   * Cc'need-certificate'
+                 + P"401"    * Cc'client'   * Cc'unauthorized''
                  + P"403"    * Cc'client'   * Cc'forbidden'
                  + P"404"    * Cc'client'   * Cc'not-found'
+                 + P"405"    * Cc'client'   * Cc'unauthorized'
                  + P"410"    * Cc'client'   * Cc'gone'
                  + P"429"    * Cc'client'   * Cc'slow-down'
-                 + P"460"    * Cc'client'   * Cc'future-certificate'
-                 + P"461"    * Cc'client'   * Cc'expired-certificate'
+                 + P"460"    * Cc'client'   * Cc'need-certificate'
+                 + P"461"    * Cc'client'   * Cc'future-certificate'
+                 + P"462"    * Cc'client'   * Cc'expired-certificate'
+                 + P"463"    * Cc'client'   * Cc'rejected-certificate'
                  
                  -- ----------------
                  -- Catch-all path

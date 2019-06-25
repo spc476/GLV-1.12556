@@ -101,7 +101,7 @@ local function authorized(ios,dir)
   end
   
   if not ios.__ctx:peer_cert_provided() then
-    return false,401,"Unauthorized"
+    return false,460,"Need certificate"
   end
   
   local notbefore = ios.__ctx:peer_cert_notbefore()
@@ -109,11 +109,11 @@ local function authorized(ios,dir)
   local now       = os.time()
   
   if now < notbefore then
-    return false,460,"Future Certificate"
+    return false,461,"Future Certificate"
   end
   
   if now > notafter then
-    return false,461,"Expired Certificate"
+    return false,462,"Expired Certificate"
   end
   
   local issuer  = cert_parse:match(ios.__ctx:peer_cert_issuer())
@@ -130,7 +130,7 @@ local function authorized(ios,dir)
     return false,500,"Must not black out ... "
   end
   
-  return auth,401,"Unauthorized"
+  return auth,463,"Rejected certificate"
 end
 
 -- ************************************************************************
