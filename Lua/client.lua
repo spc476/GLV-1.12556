@@ -78,7 +78,7 @@ local function main(cert,key,nover,skip,location)
   end
   ios:write(normalize_directory(loc.path),"\r\n")
   if skip then ios:read("*l") end
-  io.stdout:write(ios:read("*a"),"\n")
+  io.stdout:write(ios:read("*a"))
   ios:close()
 end
 
