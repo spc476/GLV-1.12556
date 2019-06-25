@@ -76,7 +76,7 @@ local statparse do
   local DD       = R"09" * R"09"
   local status   = P"200"    * Cc'okay'     * Cc'content'
                  + P"301"    * Cc'redirect' * Cc'permanent'
-                 + P"401"    * Cc'client'   * Cc'unauthorized''
+                 + P"401"    * Cc'client'   * Cc'unauthorized'
                  + P"403"    * Cc'client'   * Cc'forbidden'
                  + P"404"    * Cc'client'   * Cc'not-found'
                  + P"405"    * Cc'client'   * Cc'unauthorized'
