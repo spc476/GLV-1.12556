@@ -84,10 +84,20 @@ local statparse do
                  + P"460"    * Cc'client'   * Cc'future-certificate'
                  + P"461"    * Cc'client'   * Cc'expired-certificate'
                  + P"500"    * Cc'server'   * Cc'server'
+                 
+                 -- ----------------
+                 -- Catch-all path
+                 -- ----------------
+                 
                  + P"2" * DD * Cc'okay'     * Cc'content'
                  + P"3" * DD * Cc'redirect' * Cc'see-other'
                  + P"4" * DD * Cc'client'   * Cc'error'
                  + P"5" * DD * Cc'server'   * Cc'error'
+                 
+                 -- -----------------------------------
+                 -- The "Official Spec" return codes.
+                 -- -----------------------------------
+                 
                  + P"2"      * Cc'okay'     * Cc'content'
                  + P"3"      * Cc'redirect' * Cc'permanent'
                  + P"4"      * Cc'client'   * Cc'error'
