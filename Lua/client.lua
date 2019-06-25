@@ -174,7 +174,6 @@ usage: %s [options] url
         -c | --cert certificate
         -k | --key  keyfile
         -n | --noverify
-        -s | --skipheader
         -h | --help this text
 ]]
 
