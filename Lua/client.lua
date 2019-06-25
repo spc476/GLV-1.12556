@@ -122,7 +122,8 @@ local function main(location,usecert)
         return false
       end
     end
-    if nover then conf:insecure_no_verify_cert() end
+    
+    if NOVER then conf:insecure_no_verify_cert() end
     return conf:protocols "all"
   end)
   
