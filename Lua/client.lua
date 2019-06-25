@@ -28,6 +28,10 @@ local url    = require "org.conman.parsers.url"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
+local CERT
+local KEY
+local NOVER
+
 -- ************************************************************************
 -- Because we're sending a URL, we need to properly escape the path in case
 -- it contains characters from the 'reserved' set of characters for URLs.
@@ -63,11 +67,50 @@ end
 
 -- ************************************************************************
 
-local function main(cert,key,nover,skip,location)
+local statparse do
+  local Cc = lpeg.Cc
+  local C  = lpeg.C
+  local P  = lpeg.P
+  local R  = lpeg.R
+  
+  local DD       = R"09" * R"09"
+  local status   = P"200"    * Cc'okay'     * Cc'content'
+                 + P"301"    * Cc'redirect' * Cc'permanent'
+                 + P"401"    * Cc'client'   * Cc'need-certificate'
+                 + P"403"    * Cc'client'   * Cc'forbidden'
+                 + P"404"    * Cc'client'   * Cc'not-found'
+                 + P"410"    * Cc'client'   * Cc'gone'
+                 + P"429"    * Cc'client'   * Cc'slow-down'
+                 + P"460"    * Cc'client'   * Cc'future-certificate'
+                 + P"461"    * Cc'client'   * Cc'expired-certificate'
+                 + P"500"    * Cc'server'   * Cc'server'
+                 + P"2" * DD * Cc'okay'     * Cc'content'
+                 + P"3" * DD * Cc'redirect' * Cc'see-other'
+                 + P"4" * DD * Cc'client'   * Cc'error'
+                 + P"5" * DD * Cc'server'   * Cc'error'
+                 + P"2"      * Cc'okay'     * Cc'content'
+                 + P"3"      * Cc'redirect' * Cc'permanent'
+                 + P"4"      * Cc'client'   * Cc'error'
+                 + P"5"      * Cc'server'   * Cc'error'
+                 + P"9"      * Cc'client'   * Cc'slow-down'
+                 
+  local infotype = P"\t" * C(R" \255"^0)
+                 + Cc"type/text; charset=utf-8"
+                 
+  statparse      = status * infotype
+end
+
+-- ************************************************************************
+
+local function main(location,usecert)
   local loc = url:match(location)
   local ios = tls.connect(loc.host,loc.port,nil,function(conf)
-    if cert  then conf:cert_file(cert)           end
-    if key   then conf:key_file(key)             end
+    if usecert then
+      if not conf:cert_file(CERT)
+      or not conf:key_file(KEY) then
+        return false
+      end
+    end
     if nover then conf:insecure_no_verify_cert() end
     return conf:protocols "all"
   end)
@@ -77,14 +120,46 @@ local function main(cert,key,nover,skip,location)
     return
   end
   ios:write(normalize_directory(loc.path),"\r\n")
-  if skip then ios:read("*l") end
-  io.stdout:write(ios:read("*a"))
+  
+  local statline = ios:read("*l")
+  if not statline then
+    io.stderr:write("bad request\n")
+    ios:close()
+    return
+  end
+  
+  local system,status,info = statparse:match(statline)
+  if not system then
+    io.stderr:write("bad reply: ",statline,"\n")
+    ios:close()
+    return
+  end
+  
+  io.stderr:write(string.format("system=%s status=%s info=%s\n",
+        system,
+        status,
+        info
+  ))
+  
+  if system == 'client' then
+    if status == 'need-certificate' then
+      return main(location,true)
+    end
+  end
+  
+  if system == 'okay' then
+    io.stdout:write(ios:read("*a"))
+  end
+  
   ios:close()
 end
 
 -- ************************************************************************
 
-local CERT , KEY , NOVER , SKIP , URL do
+CERT = os.getenv("GEMINI_CERT")
+KEY  = os.getenv("GEMINI_KEY")
+
+local URL do
   local usage = [[
 usage: %s [options] url
         -c | --cert certificate
@@ -99,7 +174,6 @@ usage: %s [options] url
     { "c" , "cert"     , true    , function(c) CERT  = c    end },
     { "k" , "key"      , true    , function(k) KEY   = k    end },
     { "n" , "noverify" , false   , function()  NOVER = true end },
-    { "s" , "skipheader" , false , function()  SKIP  = true end },
     { 'h' , "help"     , false   , function()
         io.stderr:write(string.format(usage,arg[0]))
         os.exit(false,true)
@@ -115,5 +189,5 @@ usage: %s [options] url
   URL = arg[getopt(arg,opts)]
 end
 
-nfl.spawn(main,CERT,KEY,NOVER,SKIP,URL)
+nfl.spawn(main,URL)
 nfl.client_eventloop()
