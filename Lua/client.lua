@@ -79,7 +79,6 @@ local statparse do
                  + P"401"    * Cc'client'   * Cc'unauthorized'
                  + P"403"    * Cc'client'   * Cc'forbidden'
                  + P"404"    * Cc'client'   * Cc'not-found'
-                 + P"405"    * Cc'client'   * Cc'unauthorized'
                  + P"410"    * Cc'client'   * Cc'gone'
                  + P"429"    * Cc'client'   * Cc'slow-down'
                  + P"460"    * Cc'client'   * Cc'need-certificate'
