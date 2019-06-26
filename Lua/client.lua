@@ -154,7 +154,7 @@ local function main(location,usecert)
   ))
   
   if system == 'client' then
-    if status == 'need-certificate' then
+    if status == 'need-certificate' and CERT and KEY then
       return main(location,true)
     end
   end
