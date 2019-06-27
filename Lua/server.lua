@@ -181,8 +181,8 @@ end
 local function log(ios,status,request,bytes,subject,issuer)
   syslog(
         'info',
-        "host=%s status=%d request=%q bytes=%d subject=%q issuer=%q",
-        tostring(ios.__remote),
+        "remote=%s status=%d request=%q bytes=%d subject=%q issuer=%q",
+        ios.__remote.addr,
         status,
         request,
         bytes,
