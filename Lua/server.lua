@@ -104,20 +104,22 @@ local function authorized(ios,dir)
     return false,460,"Need certificate"
   end
   
+  local I         = ios.__ctx:peer_cert_issuer()
+  local S         = ios.__ctx:peer_cert_subject()
+  local issuer    = cert_parse:match(I)
+  local subject   = cert_parse:match(S)
   local notbefore = ios.__ctx:peer_cert_notbefore()
   local notafter  = ios.__ctx:peer_cert_notafter()
   local now       = os.time()
   
   if now < notbefore then
-    return false,461,"Future Certificate"
+    return false,461,"Future Certificate",S,I
   end
   
   if now > notafter then
-    return false,462,"Expired Certificate"
+    return false,462,"Expired Certificate",S,I
   end
   
-  local issuer  = cert_parse:match(ios.__ctx:peer_cert_issuer())
-  local subject = cert_parse:match(ios.__ctx:peer_cert_subject())
   
   local check = loadfile(pfname,"t",{})
   if not check then
@@ -130,13 +132,14 @@ local function authorized(ios,dir)
     return false,500,"Must not black out ... "
   end
   
-  return auth,463,"Rejected certificate"
+  return auth,463,"Rejected certificate",S,I
 end
 
 -- ************************************************************************
 
 local function copy_file(ios,name)
   local f = io.open(name,"rb")
+  local s = 0
   repeat
     local data = f:read(8192)
     if data then
@@ -144,11 +147,13 @@ local function copy_file(ios,name)
       if not okay then
         syslog('error',"ios:write() = %s",err)
         f:close()
-        return
+        return s
       end
+      s = s + #data
     end
   until not data
   f:close()
+  return s
 end
 
 -- ************************************************************************
@@ -159,16 +164,44 @@ end
 
 -- ************************************************************************
 
+local function reply(ios,...)
+  local bytes = 0
+  
+  for i = 1 , select('#',...) do
+    local item = select(i,...)
+    bytes = bytes + #tostring(item)
+  end
+  
+  ios:write(...)
+  return bytes
+end
+
+-- ************************************************************************
+
+local function log(ios,status,request,bytes,subject,issuer)
+  syslog(
+        'info',
+        "host=%s status=%d request=%q bytes=%d subject=%q issuer=%q",
+        tostring(ios.__remote),
+        status,
+        request,
+        bytes,
+        subject or "",
+        issuer  or ""
+  )
+end
+
+-- ************************************************************************
+
 local function main(ios)
   ios:_handshake()
   
   local request = ios:read("*l")
   if not request then
-    ios:write("400\tBad Request\r\n")
+    log(ios,400,"",reply(ios,"400\tBad Request\r\n"))
     ios:close()
   end
   
-  syslog('info',"host=%s request=%q",tostring(ios.__remote),request)
   local loc  = url:match(request)
   
   -- ---------------------------------------------------------------------
@@ -181,13 +214,15 @@ local function main(ios)
   if loc.scheme and loc.scheme ~= 'gemini'
   or loc.host   and loc.host   ~= CONF.network.host
   or loc.port   and loc.port   ~= CONF.network.port then
-    ios:write("400\tBad Request\r\n")
+    log(ios,400,request,reply(ios,"400\tBad Request\r\n"))
     ios:close()
     return
   end
   
-  local path = normalize_directory(loc.path)
-  local final = "."
+  local path    = normalize_directory(loc.path)
+  local final   = "."
+  local subject
+  local issuer
   
   for dir in descend_path(path) do
     -- ------------------------
@@ -195,19 +230,19 @@ local function main(ios)
     -- ------------------------
     
     if dir == "./source-code" then
-      ios:write("301\t/sourcecode/\r\n")
+      log(ios,301,request,reply(ios,"301\t/sourcecode/\r\n"))
       ios:close()
       return
     end
     
     if dir == "./obsolete" then
-      ios:write("301\tgemini://example.com/documents/gemini/\r\n")
+      log(ios,301,request,reply(ios,"301\tgemini://example.com/documents/gemini/\r\n"))
       ios:close()
       return
     end
     
     if dir == "./no-longer-here" then
-      ios:write("410\tNo Longer here\r\n")
+      log(ios,410,request,reply(ios,"410\tNo Longer here\r\n"))
       ios:close()
       return
     end
@@ -215,14 +250,14 @@ local function main(ios)
     local info = fsys.stat(dir)
     
     if not info then
-      ios:write("404\tNot Found\r\n")
+      log(ios,404,request,reply(ios,"404\tNot Found\r\n"))
       ios:close()
       return
     end
     
     if info.mode.type == 'dir' then
       if dir:match ".*/%." then
-        ios:write("404\tNot Found\r\n")
+        log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
         ios:close()
       end
       
@@ -231,7 +266,7 @@ local function main(ios)
       -- -------------------------------------
       
       if not fsys.access(dir,"x") then
-        ios:write("403\tForbidden\r\n")
+        log(ios,403,request,reply(ios,"403\tForbidden\r\n"),subject,issuer)
         ios:close()
         return
       end
@@ -240,14 +275,16 @@ local function main(ios)
       -- Does this directory have certificate requirements?
       -- ---------------------------------------------------
       
-      local auth,status,msg = authorized(ios,dir)
+      local auth,status,msg,s,i = authorized(ios,dir)
       if not auth then
-        ios:write(string.format("%d\t%s\r\n",status,msg))
+        log(ios,status,request,reply(ios,string.format("%d\t%s\r\n",status,msg)),s,i)
         ios:close()
         return
       end
       
       final = dir
+      if s and not subject then subject = s end
+      if i and not issuer  then issuer  = i end
       
     elseif info.mode.type == 'file' then
       -- ------------------------------------
@@ -255,32 +292,35 @@ local function main(ios)
       -- ------------------------------------
       
       if not fsys.access(dir,"r") then
-        ios:write("403\tForbidden\r\n")
+        log(ios,403,request,reply(ios,"403\tForbidden\r\n"),subject,issuer)
         ios:close()
         return
       end
       
       if dir:match ".*/%." then
-        ios:write("404\tNot Found\r\n")
+        log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
         ios:close()
         return
       elseif dir:match "~$" then
-        ios:write("404\tNot found\r\n")
+        log(ios,404,request,reply(ios,"404\tNot found\r\n"),subject,issuer)
         ios:close()
+        return
       elseif dir:match ".*%.gemini$" then
-        ios:write("200\ttext/gemini\r\n")
-        copy_file(ios,dir)
+        local bytes = reply(ios,"200\ttext/gemini\r\n")
+                    + copy_file(ios,dir)
+        log(ios,200,request,bytes,subject,issuer)
         ios:close()
         return
       else
-        ios:write("200\t",magic(dir),"\r\n")
-        copy_file(ios,dir)
+        local bytes = reply(ios,"200\t",magic(dir),"\r\n")
+                    + copy_file(ios,dir)
+        log(ios,200,request,bytes,subject,issuer)
         ios:close()
         return
       end
       
     else
-      ios:write("404\tNot Found\r\n")
+      log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
       ios:close()
       return
     end
@@ -288,22 +328,25 @@ local function main(ios)
   
   if not final then
     syslog('critical',"This should not happen")
-    ios:write("500\tOops, internal error\r\n")
+    log(ios,500,request,reply(ios,"500\tOops, internal error\r\n"),subject,issuer)
     ios:close()
     return
   end
   
   local indexf = final .. "/index.gemini"
   if fsys.access(indexf,"r") then
-    ios:write("200\ttext/gemini\r\n")
-    copy_file(ios,indexf)
+    local bytes = reply(ios,"200\ttext/gemini\r\n")
+                + copy_file(ios,indexf)
+    log(ios,200,request,bytes,subject,issuer)
     ios:close()
     return
   end
   
-  ios:write("200\ttext/gemini\r\n")
-  ios:write("Index of ",final:sub(2,-1),"\r\n")
-  ios:write("---------------------------\r\n")
+  local bytes = reply(ios,
+        "200\ttext/gemini\r\n",
+        "Index of ",final:sub(2,-1),"\r\n",
+        "---------------------------\r\n"
+  )
   
   local function access_okay(dir,entry)
     if entry:match "^%." then return false end
@@ -314,13 +357,18 @@ local function main(ios)
   
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
-      ios:write("\t",entry,"\t",makelink(final,entry),"\r\n")
-      ios:write("[",entry,"|",makelink(final,entry),"]\r\n")
+      bytes = bytes + reply(ios,
+        "\t",entry,"\t",makelink(final,entry),"\r\n",
+        "[",entry,"|",makelink(final,entry),"]\r\n"
+      )
     end
   end
   
-  ios:write("---------------------------\r\n")
-  ios:write("GLV/1.12556\r\n")
+  bytes = bytes + reply(ios,
+        "---------------------------\r\n",
+        "GLV/1.12556\r\n"
+  )
+  log(ios,200,request,bytes,subject,issuer)
   ios:close()
 end
 
