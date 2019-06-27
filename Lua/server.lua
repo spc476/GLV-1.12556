@@ -120,7 +120,6 @@ local function authorized(ios,dir)
     return false,462,"Expired Certificate",S,I
   end
   
-  
   local check = loadfile(pfname,"t",{})
   if not check then
     return false,500,"Lungs bleeding, ribs cracked ... "
