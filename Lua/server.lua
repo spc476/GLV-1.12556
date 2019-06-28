@@ -291,7 +291,7 @@ local function main(ios)
       -- ------------------------------------
       
       if not fsys.access(dir,"r") then
-        log(ios,403,request,reply(ios,"403\tForbidden\r\n"),subject,issuer)
+        log(ios,500,request,reply(ios,"500\tWTC?\r\n"),subject,issuer)
         ios:close()
         return
       end
