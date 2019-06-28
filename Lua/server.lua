@@ -260,12 +260,12 @@ local function main(ios)
         ios:close()
       end
       
-      -- -------------------------------------
-      -- Do the Unix permissions allow this?
-      -- -------------------------------------
+      -- -------------------------------------------
+      -- Do we have an issue with Unix permissions?
+      -- -------------------------------------------
       
       if not fsys.access(dir,"x") then
-        log(ios,403,request,reply(ios,"403\tForbidden\r\n"),subject,issuer)
+        log(ios,500,request,reply(ios,"500\tHow did this happen?\r\n"),subject,issuer)
         ios:close()
         return
       end
