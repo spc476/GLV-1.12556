@@ -123,7 +123,12 @@ local function main(location,usecert)
       end
     end
     
-    if NOVER then conf:insecure_no_verify_cert() end
+    if NOVER then
+      conf:insecure_no_verify_name()
+      conf:insecure_no_verify_time()
+      conf:insecure_no_verify_cert()
+    end
+
     return conf:protocols "all"
   end)
   
