@@ -199,6 +199,7 @@ local function main(ios)
   if not request then
     log(ios,400,"",reply(ios,"400\tBad Request\r\n"))
     ios:close()
+    return
   end
   
   local loc  = url:match(request)
@@ -258,6 +259,7 @@ local function main(ios)
       if dir:match ".*/%." then
         log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
         ios:close()
+        return
       end
       
       -- -------------------------------------------
