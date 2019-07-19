@@ -462,7 +462,12 @@ local function main(ios)
     return
   end
   
-  local loc  = url:match(request)
+  local loc = url:match(request)
+  if not loc then
+    log(ios,400,request,reply(ios,"400\tBad reqeust\r\n"))
+    ios:close()
+    return
+  end
   
   -- ---------------------------------------------------------------------
   -- I actually accept URLs as the request---this way, if we support more
