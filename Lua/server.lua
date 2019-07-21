@@ -629,7 +629,8 @@ local function main(ios)
   local bytes = reply(ios,
         "200\ttext/gemini\r\n",
         "Index of ",final:sub(2,-1),"\r\n",
-        "---------------------------\r\n"
+        "---------------------------\r\n",
+        "\r\n"
   )
   
   local function access_okay(dir,entry)
@@ -641,14 +642,12 @@ local function main(ios)
   
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
-      bytes = bytes + reply(ios,
-        "\t",entry,"\t",makelink(final,entry),"\r\n",
-        "[",entry,"|",makelink(final,entry),"]\r\n"
-      )
+      bytes = bytes + reply(ios,"=> ",makelink(final,entry)," ",entry,"\r\n")
     end
   end
   
   bytes = bytes + reply(ios,
+        "\r\n",
         "---------------------------\r\n",
         "GLV/1.12556\r\n"
   )
