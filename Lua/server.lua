@@ -52,6 +52,10 @@ do
   
   conf()
   
+  if CONF.modules then
+    package.path = CONF.modules .. ";" .. package.path
+  end
+  
   -- --------------------------------------------
   -- Make sure the redirect tables always exist.
   -- --------------------------------------------
