@@ -32,9 +32,6 @@ local net       = require "org.conman.net"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
 local url       = require "org.conman.parsers.url"
-local soundex   = require "org.conman.parsers.soundex"
-local metaphone = require "org.conman.string".metaphone
-local wrapt     = require "org.conman.string".wrapt
 local lpeg      = require "lpeg"
 
 local CONF = {}
@@ -66,6 +63,42 @@ do
     CONF.redirect.permanent = CONF.redirect.permanent or {}
     CONF.redirect.gone      = CONF.redirect.gone      or {}
   end
+  
+  if not CONF.handlers then
+    CONF.handlers = {}
+  else
+    local function loadmod(info)
+      local okay,mod = pcall(require,info.module)
+      if not okay then
+        syslog('error',"%s: %s",info.module,mod)
+        return
+      end
+      
+      if type(mod) ~= 'table' then
+        syslog('error',"%s: module not supported",info.module)
+        return
+      end
+      
+      if not mod.handler then
+        syslog('error',"%s: missing handler()",info.module)
+        return
+      end
+      
+      if mod.init then
+        okay,err = mod.init(info)
+        if not okay then
+          syslog('error',"%s: %s",info.module,err)
+          return
+        end
+      end
+      
+      info.code = mod
+    end
+    
+    for _,info in pairs(CONF.handlers) do
+      loadmod(info)
+    end
+  end
 end
 
 magic:flags('mime')
@@ -75,70 +108,6 @@ CONF._internal      = {}
 CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
 
 -- ************************************************************************
--- The Bible module of the server.  I'm still trying to keep this as one
--- file for now, but eventually, this may be broken out.  But not this day.
--- ************************************************************************
-
-local ABBR , BOOKS , SOUNDEX , METAPHONE do
-  local entry = lpeg.C(lpeg.R("AZ","az","09")^1)
-              * lpeg.S" \t"^0 * lpeg.P"," * lpeg.S" \t"^0
-              * lpeg.C(lpeg.R("AZ","az","09")^1)
-  ABBR        = {}
-  BOOKS       = {}
-  SOUNDEX     = {}
-  METAPHONE   = {}
-  
-  for line in io.lines(CONF.bible.books) do
-    local abbr,book = entry:match(line)
-    local s         = soundex:match(book)
-    local m         = metaphone(book)
-    ABBR[abbr]      = book
-    BOOKS[book]     = true
-    SOUNDEX[s]      = book
-    METAPHONE[m]    = book
-  end
-end
-
--- ************************************************************************
-
-local bible_parse do
-  local Cb = lpeg.Cb
-  local Cc = lpeg.Cc
-  local Cg = lpeg.Cg
-  local Ct = lpeg.Ct
-  local P  = lpeg.P
-  local R  = lpeg.R
-  
-  -- G                  G.1:1-999:999
-  -- G.a                G.a:1-a:999
-  -- G.a:b              G.a:b-a:b
-  -- G.a:b-x            G.a:b-a:x
-  -- G.a-c              G.a:1-c:999
-  -- G.a-c:d            G.a:1-c:d
-  -- G.a:b-c:d          G.a:b-c:d
-  
-  local num   = R"09"^1 / tonumber
-  
-  local book  = Cg(R("AZ","az","09")^1,'book')
-              * Cg(Cc(  1),'cb') * Cg(Cc(  1),'vb') -- starting chapter/book
-              * Cg(Cc(999),'ce') * Cg(Cc(999),'ve') -- ending chapter/book
-              
-  local start = P"." * Cg(num,'cb')
-              * Cg(Cc(true),'fcb')
-              * Cg(Cb'cb','ce')
-              * (
-                  P":" * Cg(num,'vb') * Cg(Cc(true),'fvb')
-                  * (
-                      (#(P"-" * R"09"^1 * P(-1)) * P"-" * Cg(num,'ve'))
-                      + Cg(Cb'vb','ve')
-                    )
-                )^-1
-                
-  local stop  =  P"-" * Cg(num,'ce') * Cg(Cc(true),'fce')
-              * (P":" * Cg(num,'ve') * Cg(Cc(true),'fve'))^-1
-              
-  bible_parse = Ct(book * (start * stop^-1)^-1)
-end
 
 local redirect_subst do
   local replace  = lpeg.C(lpeg.P"$" * lpeg.R"09") * lpeg.Carg(1)
@@ -150,36 +119,6 @@ local redirect_subst do
   redirect_subst = lpeg.Cs(char^1)
 end
 
--- ************************************************************************
-
-local function bible_request(query)
-  local r = bible_parse:match(query)
-  if not r then return end
-  
-  if ABBR[r.book] then
-    r.book = ABBR[r.book]
-    return r,true
-  end
-  
-  if not BOOKS[r.book] then
-    local s = soundex:match(r.book)
-    if SOUNDEX[s] then
-      r.book = SOUNDEX[s]
-      return r,true
-    end
-    
-    local m = metaphone(r.book)
-    if METAPHONE[m] then
-      r.book = METAPHONE[m]
-      return r,true
-    end
-  else
-    return r,false
-  end
-end
-
--- ************************************************************************
--- We resume our regular gemini server code
 -- ************************************************************************
 
 local function normalize_directory(path)
@@ -336,144 +275,6 @@ end
 
 -- ************************************************************************
 
-local function handle_bible(ios,request,path,subject,issuer)
-
-  local function redirect_here(loc,book)
-  
-    local selector = { book.book }
-    
-    if book.fcb then
-      table.insert(selector,string.format(".%d",book.cb))
-    end
-    if book.fvb then
-      table.insert(selector,string.format(":%d",book.vb))
-    end
-    if book.fce then
-      table.insert(selector,string.format("-%d",book.ce))
-    end
-    if book.fve then
-      table.insert(selector,string.format(":%d",book.ve))
-    end
-    
-    loc[#loc] = table.concat(selector)
-    
-    local port do
-      if CONF.network.port ~= 1965 then
-        port = ":" .. tostring(CONF.network.port)
-      else
-        port = ""
-      end
-    end
-    
-    return string.format("gemini://%s%s/%s",
-        CONF.network.host,
-        port,
-        table.concat(loc,"/")
-    )
-  end
-  
-  -- ================================================
-  
-  local r,redirect = bible_request(path[#path])
-  local buffer     = {}
-  
-  if not r then
-    log(ios,404,request,reply(ios,"404\tNowFound\r\n"))
-    return
-  end
-  
-  if redirect then
-    local here = string.format("301\t%s\r\n",redirect_here(path,r))
-    log(ios,301,request,reply(ios,here),subject,issuer)
-    return
-  end
-  
-  -- ================================================
-  
-  local function write(fmt,...)
-    local s = string.format(fmt,...)
-    table.insert(buffer,s)
-  end
-  
-  -- ================================================
-  
-  local function readint(file)
-    local c = file:read(1) -- trigger EOF
-    if c then
-      return c:byte()
-           + file:read(1):byte() * 2^8
-           + file:read(1):byte() * 2^16
-           + file:read(1):byte() * 2^24
-    end
-  end
-  
-  -- ================================================
-  
-  local function show_chapter(chapter,low,high)
-    local index = io.open(string.format("%s/%s/%d.index",CONF.bible.verses,r.book,chapter),"rb")
-    if not index then return end
-    local verse = io.open(string.format("%s/%s/%d",CONF.bible.verses,r.book,chapter),"r")
-    local max   = math.min(high,readint(index))
-    
-    high = math.min(high,max)
-    
-    index:seek('set',low * 4)
-    local start = readint(index)
-    verse:seek('set',start)
-    
-    local hdr = string.format("Chapter %d",chapter)
-    write("\n%s%s\n\n",string.rep(" ",40 - #hdr // 2),hdr)
-    
-    for v = low , high do
-      local stop = readint(index)
-      local len  = stop - start
-      local text = verse:read(len)
-      local wt   = wrapt(text,60)
-      start      = stop
-      write("%3d. %s\n",v,table.concat(wt,"\n     "))
-    end
-    
-    index:close()
-    verse:close()
-  end
-  
-  -- ================================================
-  
-  write("%s%s\n",string.rep(" ",40 - #r.book // 2),r.book)
-  
-  for chapter = r.cb , r.ce do
-    local vb
-    local ve
-    
-    if chapter == r.cb then
-      vb = r.vb
-    else
-      vb = 1
-    end
-    
-    if chapter == r.ce then
-      ve = r.ve
-    else
-      ve = 999
-    end
-    
-    show_chapter(chapter,vb,ve)
-  end
-  
-  local function copy_buffer()
-    local bytes = 0
-    for i = 1 , #buffer do
-      bytes = bytes + #buffer[i]
-      ios:write(buffer[i])
-    end
-    return bytes
-  end
-  
-  log(ios,200,request,reply(ios,"200\ttext/plain\r\n") + copy_buffer(),subject,issuer)
-end
-
--- ************************************************************************
-
 local function main(ios)
   ios:_handshake()
   
@@ -542,6 +343,24 @@ local function main(ios)
   end
   
   -- -------------------------------------
+  -- Run through our installed handlers
+  -- -------------------------------------
+  
+  for pattern,info in pairs(CONF.handlers) do
+    local match = table.pack(selector:match(pattern))
+    if #match > 0 and info.code and info.code.handler then
+      local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
+      if not okay then
+        log(ios,500,request,reply(ios,"500\t",status,"\r\n"))
+      else
+        log(ios,200,mime,reply(ios,"200\t",mime,"\r\n",data))
+      end
+      ios:close()
+      return
+    end
+  end
+  
+  -- -------------------------------------
   -- Regular file processing starts now
   -- -------------------------------------
   
@@ -551,20 +370,6 @@ local function main(ios)
   local issuer
   
   for dir in descend_path(path) do
-    -- -------------------------------------------------------
-    -- And how some handlers that aren't files or directories
-    -- -------------------------------------------------------
-    
-    if dir == "./bible" then
-      if #path ~= 2 then
-        log(ios,404,request,reply(ios,"404\tNot Found\r\n"))
-      else
-        handle_bible(ios,request,path,subject,issuer)
-      end
-      ios:close()
-      return
-    end
-    
     -- ----------------------------------------------
     -- We resume our regularly scheduled programming
     -- ----------------------------------------------
@@ -718,4 +523,14 @@ signal.catch('int')
 signal.catch('term')
 syslog('info',"entering service @%s",fsys.getcwd())
 nfl.server_eventloop(function() return signal.caught() end)
+
+for _,info in pairs(CONF.handlers) do
+  if info.code and info.code.fini then
+    local ok,status = pcall(info.code.fini)
+    if not ok then
+      syslog('error',"%s: %s",info.module,status)
+    end
+  end
+end
+
 os.exit(true,true)
