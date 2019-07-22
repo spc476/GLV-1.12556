@@ -64,23 +64,35 @@ do
     CONF.redirect.gone      = CONF.redirect.gone      or {}
   end
   
+  -- --------------------------------------------------------------------
+  -- If we don't have any handlers, make sure we have the table exists.
+  -- If we do have handlers, load them up and initialize them.
+  -- --------------------------------------------------------------------
+  
   if not CONF.handlers then
     CONF.handlers = {}
   else
+    local function notfound()
+      return 404,"Not found",""
+    end
+    
     local function loadmod(info)
       local okay,mod = pcall(require,info.module)
       if not okay then
         syslog('error',"%s: %s",info.module,mod)
+        info.code = { handler = notfound }
         return
       end
       
       if type(mod) ~= 'table' then
         syslog('error',"%s: module not supported",info.module)
+        info.code = { handler = notfound } 
         return
       end
       
       if not mod.handler then
         syslog('error',"%s: missing handler()",info.module)
+        mod.handler = notfound
         return
       end
       
@@ -88,6 +100,7 @@ do
         okay,err = mod.init(info)
         if not okay then
           syslog('error',"%s: %s",info.module,err)
+          mod.handler = notfound
           return
         end
       end
@@ -348,12 +361,12 @@ local function main(ios)
   
   for pattern,info in pairs(CONF.handlers) do
     local match = table.pack(selector:match(pattern))
-    if #match > 0 and info.code and info.code.handler then
+    if #match > 0 then
       local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
       if not okay then
         log(ios,500,request,reply(ios,"500\t",status,"\r\n"))
       else
-        log(ios,200,mime,reply(ios,"200\t",mime,"\r\n",data))
+        log(ios,status,request,reply(ios,"200\t",mime,"\r\n",data))
       end
       ios:close()
       return
