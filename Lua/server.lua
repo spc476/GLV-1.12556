@@ -54,6 +54,18 @@ do
   end
   
   conf()
+  
+  -- --------------------------------------------
+  -- Make sure the redirect tables always exist.
+  -- --------------------------------------------
+  
+  if not CONF.redirect then
+    CONF.redirect = { temporary = {} , permanent = {} , gone = {} }
+  else
+    CONF.redirect.temporary = CONF.redirect.temporary or {}
+    CONF.redirect.permanent = CONF.redirect.permanent or {}
+    CONF.redirect.gone      = CONF.redirect.gone      or {}
+  end
 end
 
 magic:flags('mime')
@@ -126,6 +138,16 @@ local bible_parse do
               * (P":" * Cg(num,'ve') * Cg(Cc(true),'fve'))^-1
               
   bible_parse = Ct(book * (start * stop^-1)^-1)
+end
+
+local redirect_subst do
+  local replace  = lpeg.C(lpeg.P"$" * lpeg.R"09") * lpeg.Carg(1)
+                 / function(c,t)
+                     c = tonumber(c:sub(2,-1))
+                     return t[c]
+                   end
+  local char     = replace + lpeg.P(1)
+  redirect_subst = lpeg.Cs(char^1)
 end
 
 -- ************************************************************************
@@ -484,34 +506,51 @@ local function main(ios)
     return
   end
   
+  -- -------------------------------------------------------------
+  -- We handle the various redirections here, the temporary ones,
+  -- the permanent ones, and those that are gone gone gone ...
+  -- -------------------------------------------------------------
+  
+  local selector = "/" .. table.concat(loc.path,"/")
+  
+  for pattern,replace in pairs(CONF.redirect.temporary) do
+    local match = table.pack(selector:match(pattern))
+    if #match > 0 then
+      local new = redirect_subst:match(replace,1,match)
+      log(ios,302,request,reply(ios,"302\t",new,"\r\n"))
+      ios:close()
+      return
+    end
+  end
+  
+  for pattern,replace in pairs(CONF.redirect.permanent) do
+    local match = table.pack(selector:match(pattern))
+    if #match > 0 then
+      local new = redirect_subst:match(replace,1,match)
+      log(ios,301,request,reply(ios,"301\t",new,"\r\n"))
+      ios:close()
+      return
+    end
+  end
+  
+  for _,pattern in ipairs(CONF.redirect.gone) do
+    if selector:match(pattern) then
+      log(ios,410,request,reply(ios,"410\tNo Longer here\r\n"))
+      ios:close()
+      return
+    end
+  end
+  
+  -- -------------------------------------
+  -- Regular file processing starts now
+  -- -------------------------------------
+  
   local path    = normalize_directory(loc.path)
   local final   = "."
   local subject
   local issuer
   
   for dir in descend_path(path) do
-    -- ------------------------
-    -- Throw in some redirects and gones
-    -- ------------------------
-    
-    if dir == "./source-code" then
-      log(ios,301,request,reply(ios,"301\t/sourcecode/\r\n"))
-      ios:close()
-      return
-    end
-    
-    if dir == "./obsolete" then
-      log(ios,301,request,reply(ios,"301\tgemini://example.com/documents/gemini/\r\n"))
-      ios:close()
-      return
-    end
-    
-    if dir == "./no-longer-here" then
-      log(ios,410,request,reply(ios,"410\tNo Longer here\r\n"))
-      ios:close()
-      return
-    end
-    
     -- -------------------------------------------------------
     -- And how some handlers that aren't files or directories
     -- -------------------------------------------------------
