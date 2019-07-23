@@ -90,7 +90,7 @@ do
       
       if type(mod) ~= 'table' then
         syslog('error',"%s: module not supported",info.module)
-        info.code = { handler = notfound } 
+        info.code = { handler = notfound }
         return
       end
       
@@ -257,19 +257,6 @@ end
 
 -- ************************************************************************
 
-local function copy_data(ios,data)
-  local s = 0
-  while #data > 0 do
-    local chunk = data:sub(1,8192)
-    s = s + #chunk
-    ios:write(chunk)
-    data = data:sub(#chunk + 1,-1)
-  end
-  return s
-end
-
--- ************************************************************************
-
 local function makelink(dir,file)
   return dir:sub(2,-1) .. "/" .. file
 end
@@ -381,12 +368,10 @@ local function main(ios)
     if #match > 0 then
       local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
       if not okay then
-        log(ios,500,request,reply(ios,"500\tInternal Error\r\n"),subject,issuer)
+        log(ios,500,request,reply(ios,"500\tInternal Error\r\n"))
         syslog('error',"request=%s error=%s",request,status)
       else
-        local bytes = reply(ios,status,"\t",mime,"\r\n")
-                    + copy_data(ios,data)
-        log(ios,status,request,bytes,subject,issuer)
+        log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
       end
       ios:close()
       return
