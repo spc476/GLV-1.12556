@@ -461,6 +461,9 @@ local function main(ios)
       else
         if fsys.access(dir,"x") then
           cgi = require "cgi"
+          loc.scheme  = loc.scheme or "gemini"
+          loc.host    = loc.host or CONF.network.host
+          loc.port    = loc.port or CONF.network.port
           loc.path._n = path._n
           local status,mime,data = cgi(ios.__remote,dir,loc)
           log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
