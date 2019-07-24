@@ -522,7 +522,7 @@ local function main(ios)
   bytes = bytes + reply(ios,
         "\r\n",
         "---------------------------\r\n",
-        "GLV/1.12556\r\n"
+        "GLV-1.12556\r\n"
   )
   log(ios,200,request,bytes,subject,issuer)
   ios:close()
