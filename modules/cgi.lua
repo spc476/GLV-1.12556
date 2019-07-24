@@ -168,7 +168,6 @@ return function(remote,program,location)
   local env =
   {
     PATH              = "/usr/local/bin:/usr/bin:/bin",
-    DEBUG             = "true",
     
     GATEWAY_INTERFACE = "CGI/1.1",
     QUERY_STRING      = query_to_string(location.query),
