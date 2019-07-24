@@ -88,7 +88,7 @@ function init(conf)
   local entry = lpeg.C(lpeg.R("AZ","az","09")^1)
               * lpeg.S" \t"^0 * lpeg.P"," * lpeg.S" \t"^0
               * lpeg.C(lpeg.R("AZ","az","09")^1)
-  
+              
   for line in io.lines(conf.books) do
     local abbr,book = entry:match(line)
     local s         = soundex:match(book)

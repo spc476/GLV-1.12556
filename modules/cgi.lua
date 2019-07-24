@@ -154,7 +154,7 @@ return function(remote,program,location)
   
   local devnulo = io.open("/dev/null","w")
   local devnuli = io.open("/dev/null","r")
-
+  
   local pipe = makepipe()
   if not pipe then
     devnuli:close()
