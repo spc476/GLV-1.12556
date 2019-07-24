@@ -173,7 +173,10 @@ return function(remote,program,location)
     fsys.redirect(devnuli,io.stdin)
     
     local _,err2 = fsys.redirect(pipe.write,io.stdout)
-    syslog('error',"fsys.redirect(stdout) = %s",errno[err2])
+    if err2 ~= 0 then
+      syslog('error',"fsys.redirect(stdout) = %s",errno[err2])
+      return 500,"Internal Error",""
+    end
     
     fsys.redirect(devnulo,io.stderr)
     
@@ -195,6 +198,22 @@ return function(remote,program,location)
   local data = inp:read("a")
   inp:close()
   
-  local status = process.wait(child)
-  return 200,"text/plain",hdrs .. "\r\n" .. data
+  local status,err1 = process.wait(child)
+  
+  if not status then
+    syslog('error',"process.wait() = %s",errno[err])
+    return 500,"Internal Error",""
+  end
+  
+  if status.status == 'normal' then
+    if status.rc == 0 then
+      return 200,"text/plain",hdrs .. "\r\n" .. data
+    else
+      syslog('warning',"program=%q status=%d",program,status.rc)
+      return 500,"Internal Error",""
+    end
+  else
+    syslog('error',"program=%q status=%s description=%s",program,status.status,status.description)
+    return 500,"Internal Error",""
+  end
 end
