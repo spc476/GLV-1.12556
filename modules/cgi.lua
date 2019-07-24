@@ -147,6 +147,10 @@ return function(remote,program,location)
     SERVER_SOFTWARE   = "GLV-1.12556/1",
   }
   
+  -- -------------------------------------------------------------------
+  -- XXX-a total hack.  I need to think on how to pass this info across
+  -- -------------------------------------------------------------------
+  
   if location.path._n < #location.path then
     env.PATH_INFO       = totranslate(location)
     env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
