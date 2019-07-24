@@ -53,7 +53,8 @@ do
   conf()
   
   if CONF.modules then
-    package.path = CONF.modules .. ";" .. package.path
+    package.path  = CONF.modules  .. ";" .. package.path
+    package.cpath = CONF.cmodules .. ";" .. package.cpath
   end
   
   -- --------------------------------------------
