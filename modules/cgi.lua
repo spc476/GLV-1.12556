@@ -143,7 +143,7 @@ return function(remote,program,location)
     SCRIPT_NAME       = touripath(location),
     SERVER_NAME       = location.host,
     SERVER_PORT       = tostring(location.port),
-    SERVER_PROTOCOL   = "GEMINI/1.0",
+    SERVER_PROTOCOL   = "GEMINI",
     SERVER_SOFTWARE   = "GLV-1.12556/1",
   }
   
