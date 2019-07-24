@@ -458,9 +458,16 @@ local function main(ios)
         ios:close()
         return
       else
-        local bytes = reply(ios,"200\t",magic(dir),"\r\n")
-                    + copy_file(ios,dir)
-        log(ios,200,request,bytes,subject,issuer)
+        if fsys.access(dir,"x") then
+          cgi = require "cgi"
+          loc.path._n = path._n
+          local status,mime,data = cgi(ios.__remote,dir,loc)
+          log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
+        else
+          local bytes = reply(ios,"200\t",magic(dir),"\r\n")
+                      + copy_file(ios,dir)
+          log(ios,200,request,bytes,subject,issuer)
+        end
         ios:close()
         return
       end
