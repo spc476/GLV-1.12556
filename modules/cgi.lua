@@ -1,6 +1,6 @@
 -- ************************************************************************
 --
---    Bible module
+--    CGI interface.
 --    Copyright 2019 by Sean Conner.  All Rights Reserved.
 --
 --    This program is free software: you can redistribute it and/or modify
@@ -22,25 +22,60 @@
 -- luacheck: ignore 611
 -- RFC-3875
 
-local dump   = require "org.conman.table".dump_value
-local syslog = require "org.conman.syslog"
-local fsys   = require "org.conman.fsys"
-local ios    = require "org.conman.net.ios"
-local io     = require "io"
-local table  = require "table"
-local string = require "string"
+local syslog   = require "org.conman.syslog"
+local errno    = require "org.conman.errno"
+local fsys     = require "org.conman.fsys"
+local process  = require "org.conman.process"
+local exit     = require "org.conman.const.exit"
+local ios      = require "org.conman.net.ios"
+local nfl      = require "org.conman.nfl"
+local makepipe = require "makepipe"
+local io       = require "io"
+local table    = require "table"
+local string   = require "string"
 
-local pairs    = pairs
-local tostring = tostring
+local pairs        = pairs
+local tostring     = tostring
 
 -- ************************************************************************
 
-local function pipe_read(self)
-end
-
--- ************************************************************************
-
-local function pipe_write(self)
+local function fdtoios(fd)
+  local newfd   = ios()
+  newfd.__fd    = fd
+  newfd.__co    = coroutine.running()
+  
+  newfd.close = function(self)
+    nfl.SOCKETS:remove(fd)
+    self.__fd:close()
+    return true
+  end
+  
+  newfd._refill = function()
+    return coroutine.yield()
+  end
+  
+  nfl.SOCKETS:insert(fd,'r',function(event)
+    if event.read then
+      local data,err = fd:read()
+      if data then
+        if #data == 0 then
+          nfl.SOCKETS:remove(fd)
+          newfd._eof = true
+        end
+        nfl.schedule(newfd.__co,data)
+      else
+        if err ~= errno.EAGAIN then
+          syslog('error',"fd:read() = %s",errno[err])
+        end
+      end
+    else
+      newfd._eof = true
+      nfl.SOCKETS:remove(fd)
+      nfl.schedule(newfd.__co)
+    end
+  end)
+  
+  return newfd
 end
 
 -- ************************************************************************
@@ -109,5 +144,50 @@ return function(remote,program,location)
     env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
   end
   
-  return 200,"text/plain",dump("env",env)
+  local devnulo = io.open("/dev/null","w")
+  local devnuli = io.open("/dev/null","r")
+
+  local pipe,err1 = makepipe()
+  if not pipe then
+    syslog('error',"makepipe() = %s",errno[err1])
+    devnuli:close()
+    devnulo:close()
+    return 500,"Internal Error",""
+  end
+  
+  local child,err = process.fork()
+  
+  if not child then
+    syslog('error',"process.fork() = %s",errno[err])
+    return 500,"Internal Error",""
+  end
+  
+  if child == 0 then
+    fsys.redirect(devnuli,io.stdin)
+    
+    local _,err2 = fsys.redirect(pipe.write,io.stdout)
+    syslog('error',"fsys.redirect(stdout) = %s",errno[err2])
+    
+    fsys.redirect(devnulo,io.stderr)
+    
+    devnuli:close()
+    devnulo:close()
+    pipe.write:close()
+    pipe.read:close()
+    
+    process.exec(program,{},env)
+    process._exit(exit.OSERR)
+  end
+  
+  devnuli:close()
+  devnulo:close()
+  pipe.write:close()
+  
+  local inp  = fdtoios(pipe.read)
+  local hdrs = inp:read("h")
+  local data = inp:read("a")
+  inp:close()
+  
+  local status = process.wait(child)
+  return 200,"text/plain",hdrs .. "\r\n" .. data
 end
