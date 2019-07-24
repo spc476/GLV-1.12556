@@ -29,6 +29,8 @@ local process   = require "org.conman.process"
 local exit      = require "org.conman.const.exit"
 local ios       = require "org.conman.net.ios"
 local nfl       = require "org.conman.nfl"
+local abnf      = require "org.conman.parsers.abnf"
+local lpeg      = require "lpeg"
 local io        = require "io"
 local table     = require "table"
 local string    = require "string"
@@ -36,6 +38,38 @@ local coroutine = require "coroutine"
 
 local pairs        = pairs
 local tostring     = tostring
+
+-- ************************************************************************
+
+local parse_headers do
+  local Cf = lpeg.Cf
+  local Cg = lpeg.Cg
+  local Cs = lpeg.Cs
+  local Ct = lpeg.Ct
+  local C  = lpeg.C
+  local P  = lpeg.P
+  local R  = lpeg.R
+  local S  = lpeg.S
+  
+  local LWSP         = (abnf.WSP + abnf.CRLF * abnf.WSP)
+  local text         = LWSP^1 / " "
+                     + abnf.VCHAR
+  local ignore       = LWSP + abnf.VCHAR
+  local number       = R"09"^1 / tonumber
+  local separator    = S'()<>@,;:\\"/[]?={}\t '
+  local token        = (abnf.VCHAR - separator)^1
+
+  local status       = C"Status"       * P":" * LWSP * number * ignore^0 * abnf.CRLF
+  local content_type = C"Content-Type" * P":" * LWSP * Cs(text^1)        * abnf.CRLF
+  local location     = C"Location"     * P":" * LWSP * C(abnf.VCHAR^1)   * abnf.CRLF
+  local generic      = C(token)        * P":" * LWSP * C(text^0)         * abnf.CRLF
+  local headers      = status + content_type + location + generic
+  parse_headers      = Cf(Ct"" * Cg(headers)^1,function(acc,name,value)
+                         acc[name] = value
+                         return acc
+                       end)
+                     * abnf.CRLF
+end
 
 -- ************************************************************************
 
@@ -134,6 +168,7 @@ return function(remote,program,location)
   local env =
   {
     PATH              = "/usr/local/bin:/usr/bin:/bin",
+    DEBUG             = "true",
     
     GATEWAY_INTERFACE = "CGI/1.1",
     QUERY_STRING      = query_to_string(location.query),
@@ -202,22 +237,31 @@ return function(remote,program,location)
   local data = inp:read("a")
   inp:close()
   
-  local status,err1 = process.wait(child)
-  
-  if not status then
+  local info,err1 = process.wait(child)
+
+  if not info then
     syslog('error',"process.wait() = %s",errno[err1])
     return 500,"Internal Error",""
   end
   
-  if status.status == 'normal' then
-    if status.rc == 0 then
-      return 200,"text/plain",hdrs .. "\r\n" .. data
+  if info.status == 'normal' then
+    if info.rc == 0 then
+      local headers = parse_headers:match(hdrs)
+      
+      if headers['Location'] then
+        local status = headers['Status'] or 301
+        return status,headers['Location'],""
+      end
+      
+      local status  = headers['Status'] or 200
+      local mime    = headers['Content-Type'] or "text/plain"
+      return status,mime,data
     else
-      syslog('warning',"program=%q status=%d",program,status.rc)
+      syslog('warning',"program=%q status=%d",program,info.rc)
       return 500,"Internal Error",""
     end
   else
-    syslog('error',"program=%q status=%s description=%s",program,status.status,status.description)
+    syslog('error',"program=%q status=%s description=%s",program,info.status,info.description)
     return 500,"Internal Error",""
   end
 end
