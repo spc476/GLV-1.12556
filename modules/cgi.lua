@@ -205,7 +205,7 @@ return function(remote,program,location)
   local status,err1 = process.wait(child)
   
   if not status then
-    syslog('error',"process.wait() = %s",errno[err])
+    syslog('error',"process.wait() = %s",errno[err1])
     return 500,"Internal Error",""
   end
   
