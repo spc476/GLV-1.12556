@@ -54,6 +54,9 @@ do
   
   if CONF.modules then
     package.path  = CONF.modules  .. ";" .. package.path
+  end
+  
+  if CONF.cmodules then
     package.cpath = CONF.cmodules .. ";" .. package.cpath
   end
   
