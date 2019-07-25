@@ -40,6 +40,9 @@ local pairs     = pairs
 local tostring  = tostring
 local tonumber  = tonumber
 
+local DEVNULI = io.open("/dev/null","r")
+local DEVNULO = io.open("/dev/null","w")
+
 -- ************************************************************************
 
 local parse_headers do
@@ -191,13 +194,8 @@ return function(remote,program,location)
     env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
   end
   
-  local devnulo = io.open("/dev/null","w")
-  local devnuli = io.open("/dev/null","r")
-  
   local pipe = makepipe()
   if not pipe then
-    devnuli:close()
-    devnulo:close()
     return 500,"Internal Error",""
   end
   
@@ -209,9 +207,9 @@ return function(remote,program,location)
   end
   
   if child == 0 then
-    fsys.redirect(devnuli,io.stdin)
+    fsys.redirect(DEVNULI,io.stdin)
     fsys.redirect(pipe.write,io.stdout)
-    fsys.redirect(devnulo,io.stderr)
+    fsys.redirect(DEVNULO,io.stderr)
     
     -- -----------------------------------------------------------------
     -- Close file descriptors that aren't stdin, stdout or stderr.  Most
@@ -235,8 +233,8 @@ return function(remote,program,location)
     -- ----------------------------------------------------------
     
     else
-      devnuli:close()
-      devnulo:close()
+      DEVNULI:close()
+      DEVNULO:close()
       pipe.write:close()
       pipe.read:close()
     end
@@ -245,10 +243,7 @@ return function(remote,program,location)
     process._exit(exit.OSERR)
   end
   
-  devnuli:close()
-  devnulo:close()
   pipe.write:close()
-  
   local inp  = fdtoios(pipe.read)
   local hdrs = inp:read("h")
   local data = inp:read("a")
