@@ -460,7 +460,7 @@ local function main(ios)
         return
       else
         if fsys.access(dir,"x") then
-          cgi = require "cgi"
+          local cgi   = require "cgi"
           loc.scheme  = loc.scheme or "gemini"
           loc.host    = loc.host or CONF.network.host
           loc.port    = loc.port or CONF.network.port
