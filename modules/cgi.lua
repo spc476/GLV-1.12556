@@ -36,8 +36,9 @@ local table     = require "table"
 local string    = require "string"
 local coroutine = require "coroutine"
 
-local pairs        = pairs
-local tostring     = tostring
+local pairs     = pairs
+local tostring  = tostring
+local tonumber  = tonumber
 
 -- ************************************************************************
 
@@ -58,7 +59,7 @@ local parse_headers do
   local number       = R"09"^1 / tonumber
   local separator    = S'()<>@,;:\\"/[]?={}\t '
   local token        = (abnf.VCHAR - separator)^1
-
+  
   local status       = C"Status"       * P":" * LWSP * number * ignore^0 * abnf.CRLF
   local content_type = C"Content-Type" * P":" * LWSP * Cs(text^1)        * abnf.CRLF
   local location     = C"Location"     * P":" * LWSP * C(abnf.VCHAR^1)   * abnf.CRLF
@@ -209,19 +210,36 @@ return function(remote,program,location)
   
   if child == 0 then
     fsys.redirect(devnuli,io.stdin)
-    
-    local _,err2 = fsys.redirect(pipe.write,io.stdout)
-    if err2 ~= 0 then
-      syslog('error',"fsys.redirect(stdout) = %s",errno[err2])
-      return 500,"Internal Error",""
-    end
-    
+    fsys.redirect(pipe.write,io.stdout)
     fsys.redirect(devnulo,io.stderr)
     
-    devnuli:close()
-    devnulo:close()
-    pipe.write:close()
-    pipe.read:close()
+    -- -----------------------------------------------------------------
+    -- Close file descriptors that aren't stdin, stdout or stderr.  Most
+    -- Unix systems have dirfd(), right?  Right?  And /proc/self/fd,
+    -- right?  Um ... erm ...
+    -- -----------------------------------------------------------------
+    
+    local dir = fsys.opendir("/proc/self/fd")
+    if dir and dir._tofd then
+      local dirfh = dir:_tofd()
+      
+      for file in dir.next,dir do
+        local fh = tonumber(file)
+        if fh > 2 and fh ~= dirfh then
+          fsys._close(fh)
+        end
+      end
+      
+    -- ----------------------------------------------------------
+    -- if all else fails, at least close these to make this work
+    -- ----------------------------------------------------------
+    
+    else
+      devnuli:close()
+      devnulo:close()
+      pipe.write:close()
+      pipe.read:close()
+    end
     
     process.exec(program,{},env)
     process._exit(exit.OSERR)
@@ -237,7 +255,7 @@ return function(remote,program,location)
   inp:close()
   
   local info,err1 = process.wait(child)
-
+  
   if not info then
     syslog('error',"process.wait() = %s",errno[err1])
     return 500,"Internal Error",""
