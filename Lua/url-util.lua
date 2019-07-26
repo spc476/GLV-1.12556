@@ -26,6 +26,7 @@ local string   = require "string"
 local table    = require "table"
 
 local tonumber = tonumber
+local tostring = tostring
 local pairs    = pairs
 
 _ENV = {}
@@ -199,7 +200,7 @@ local char   = lpeg.P"%" * lpeg.C(xdigit * xdigit)
              + lpeg.R"!~"
 local name   = lpeg.Cs((char - (lpeg.P"=" + lpeg.P"&"))^1)
 local value  = lpeg.P"=" * lpeg.Cs((char - lpeg.P"&")^1)
-             + lpeg.Cc""
+             + lpeg.Cc(true)
              
 query_string = lpeg.Cf(
                         lpeg.Ct"" * lpeg.Cg(name * value * lpeg.P"&"^-1)^0,
@@ -218,10 +219,14 @@ query_string = lpeg.Cf(
 function toquery(q)
   local res = {}
   for n,v in pairs(q) do
-    table.insert(res,string.format("%s=%s",
-        esc_query:match(n),
-        esc_query:match(v)
-    ))
+    if v == true then
+      table.insert(res,esc_query:match(n))
+    else
+      table.insert(res,string.format("%s=%s",
+          esc_query:match(tostring(n)),
+          esc_query:match(tostring(v))
+      ))
+    end
   end
   return table.concat(res,"&")
 end
