@@ -19,6 +19,7 @@
 --
 -- ********************************************************************
 -- luacheck: globals rm_dot_segs merge toa query toq
+-- luacheck: globals esc_auth esc_path esc_query esc_frag
 -- luacheck: ignore 611
 
 local lpeg     = require "lpeg"
@@ -164,10 +165,10 @@ local char_query = P"="  / "%%3D"
                  + P(1)
 local char_frag  = unsafe
                  + P(1)
-local esc_auth   = Cs(char_auth^0)
-local esc_path   = Cs(char_path^0)
-local esc_query  = Cs(char_query^0)
-local esc_frag   = Cs(char_frag^0)
+esc_auth         = Cs(char_auth^0)
+esc_path         = Cs(char_path^0)
+esc_query        = Cs(char_query^0)
+esc_frag         = Cs(char_frag^0)
 
 -- ********************************************************************
 
