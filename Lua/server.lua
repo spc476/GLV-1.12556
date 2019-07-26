@@ -31,7 +31,6 @@ local errno     = require "org.conman.errno"
 local net       = require "org.conman.net"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
-local url       = require "org.conman.parsers.url"
 local lpeg      = require "lpeg"
 
 local CONF = {}
@@ -122,6 +121,9 @@ do
   end
 end
 
+local url  = require "url"      -- XXX hack
+local uurl = require "url-util" -- XXX hack
+
 magic:flags('mime')
 syslog.open(CONF.log.ident,CONF.log.facility)
 
@@ -141,7 +143,7 @@ local redirect_subst do
 end
 
 -- ************************************************************************
-
+--[[
 local function normalize_directory(path)
   local new = {}
   for _,segment in ipairs(path) do
@@ -156,19 +158,20 @@ local function normalize_directory(path)
   
   return new
 end
-
+--]]
 -- ************************************************************************
 
 local function descend_path(path)
   local function iter(state,var)
-    state._n = state._n + 1
-    if state._n <= #state then
-      return var .. "/" .. state[state._n]
+    local n = state()
+    if n then
+      assert(n ~= "..")
+      assert(n ~= ".")
+      return var .. "/" .. n
     end
   end
   
-  path._n = 0
-  return iter,path,"."
+  return iter,path:gmatch("[^/]+"),"."
 end
 
 -- ************************************************************************
@@ -328,15 +331,15 @@ local function main(ios)
     return
   end
   
+  loc.path = uurl.rm_dot_segs:match(loc.path)
+  
   -- -------------------------------------------------------------
   -- We handle the various redirections here, the temporary ones,
   -- the permanent ones, and those that are gone gone gone ...
   -- -------------------------------------------------------------
   
-  local selector = "/" .. table.concat(loc.path,"/")
-  
   for pattern,replace in pairs(CONF.redirect.temporary) do
-    local match = table.pack(selector:match(pattern))
+    local match = table.pack(loc.path:match(pattern))
     if #match > 0 then
       local new = redirect_subst:match(replace,1,match)
       log(ios,302,request,reply(ios,"302\t",new,"\r\n"))
@@ -346,7 +349,7 @@ local function main(ios)
   end
   
   for pattern,replace in pairs(CONF.redirect.permanent) do
-    local match = table.pack(selector:match(pattern))
+    local match = table.pack(loc.path:match(pattern))
     if #match > 0 then
       local new = redirect_subst:match(replace,1,match)
       log(ios,301,request,reply(ios,"301\t",new,"\r\n"))
@@ -356,7 +359,7 @@ local function main(ios)
   end
   
   for _,pattern in ipairs(CONF.redirect.gone) do
-    if selector:match(pattern) then
+    if loc.path:match(pattern) then
       log(ios,410,request,reply(ios,"410\tNo Longer here\r\n"))
       ios:close()
       return
@@ -368,7 +371,7 @@ local function main(ios)
   -- -------------------------------------
   
   for pattern,info in pairs(CONF.handlers) do
-    local match = table.pack(selector:match(pattern))
+    local match = table.pack(loc.path:match(pattern))
     if #match > 0 then
       local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
       if not okay then
@@ -386,12 +389,11 @@ local function main(ios)
   -- Regular file processing starts now
   -- -------------------------------------
   
-  local path    = normalize_directory(loc.path)
-  local final   = "."
+  local final = "."
   local subject
   local issuer
   
-  for dir in descend_path(path) do
+  for dir in descend_path(loc.path) do
     -- ----------------------------------------------
     -- We resume our regularly scheduled programming
     -- ----------------------------------------------
@@ -467,7 +469,7 @@ local function main(ios)
           loc.scheme  = loc.scheme or "gemini"
           loc.host    = loc.host or CONF.network.host
           loc.port    = loc.port or CONF.network.port
-          loc.path._n = path._n
+          --loc.path._n = path._n
           local status,mime,data = cgi(ios.__remote,dir,loc)
           log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
         else
