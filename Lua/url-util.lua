@@ -18,7 +18,7 @@
 -- Comments, questions and criticisms can be sent to: sean@conman.org
 --
 -- ********************************************************************
--- luacheck: globals rm_dot_segs merge toa query_string toquery
+-- luacheck: globals rm_dot_segs merge toa query toq
 -- luacheck: ignore 611
 
 local lpeg     = require "lpeg"
@@ -202,7 +202,7 @@ local name   = lpeg.Cs((char - (lpeg.P"=" + lpeg.P"&"))^1)
 local value  = lpeg.P"=" * lpeg.Cs((char - lpeg.P"&")^1)
              + lpeg.Cc(true)
              
-query_string = lpeg.Cf(
+query        = lpeg.Cf(
                         lpeg.Ct"" * lpeg.Cg(name * value * lpeg.P"&"^-1)^0,
                          function(result,n,v)
                            if result and not result[n] then
@@ -216,7 +216,7 @@ query_string = lpeg.Cf(
                        
 -- ********************************************************************
 
-function toquery(q)
+function toq(q)
   local res = {}
   for n,v in pairs(q) do
     if v == true then
