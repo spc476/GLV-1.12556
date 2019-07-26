@@ -27,6 +27,7 @@ local table    = require "table"
 
 local tonumber = tonumber
 local tostring = tostring
+local type     = type
 local pairs    = pairs
 
 _ENV = {}
@@ -169,28 +170,6 @@ local esc_query  = Cs(char_query^0)
 local esc_frag   = Cs(char_frag^0)
 
 -- ********************************************************************
--- Note:        From RFC-3986 5.3
--- ********************************************************************
-
-function toa(u)
-  local authority
-  
-  if u.host then
-    authority = ""
-    if u.user then authority = u.user .. "@" end
-    authority = authority .. u.host
-  end
-  
-  local result = ""
-  if u.scheme    then result = result .. u.scheme .. ':'   end
-  if authority   then result = result .. "//" .. esc_auth:match(authority) end
-                      result = result .. esc_path:match(u.path)
-  if u.query     then result = result .. "?" .. u.query    end
-  if u.fragment  then result = result .. "#" .. esc_frag:match(u.fragment) end
-  return result
-end
-
--- ********************************************************************
 
 local xdigit = lpeg.locale().xdigit
 local char   = lpeg.P"%" * lpeg.C(xdigit * xdigit)
@@ -229,6 +208,36 @@ function toq(q)
     end
   end
   return table.concat(res,"&")
+end
+
+-- ********************************************************************
+-- Note:        From RFC-3986 5.3
+-- ********************************************************************
+
+function toa(u)
+  local authority
+  
+  if u.host then
+    authority = ""
+    if u.user then authority = u.user .. "@" end
+    authority = authority .. u.host
+  end
+  
+  local result = ""
+  if u.scheme  then result = result .. u.scheme .. ':'   end
+  if authority then result = result .. "//" .. esc_auth:match(authority) end
+                    result = result .. esc_path:match(u.path)
+                    
+  if u.query then
+    if type(u.query) == 'table' then
+      result = result .. "?" .. toq(u.query)
+    else
+      result = result .. "?" .. u.query
+    end
+  end
+  
+  if u.fragment  then result = result .. "#" .. esc_frag:match(u.fragment) end
+  return result
 end
 
 -- ********************************************************************
