@@ -24,7 +24,8 @@
 
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
-local url    = require "org.conman.parsers.url"
+local url    = require "url"
+local uurl   = require "url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
@@ -33,36 +34,13 @@ local KEY
 local NOVER
 
 -- ************************************************************************
--- Because we're sending a URL, we need to properly escape the path in case
--- it contains characters from the 'reserved' set of characters for URLs.
--- ************************************************************************
 
-local safe_segment do
-  local Cs = lpeg.Cs
-  local P  = lpeg.P
-  local S  = lpeg.S
-  
-  local char   = S":/?#[]@|"
-               / function(c)
-                   return string.format("%%%02X",string.byte(c))
-                 end
-               + P(1)
-  safe_segment = Cs(char^1)
-end
-
--- ************************************************************************
-
-local function normalize_directory(path)
-  local new = {}
-  for _,segment in ipairs(path) do
-    if segment == ".." then
-      table.remove(new)
-    elseif segment ~= "." then
-      table.insert(new,safe_segment:match(segment))
-    end
+local function normalize_query(loc)
+  local result = uurl.esc_path:match(loc.path)
+  if loc.query then
+    result = result .. "?" .. loc.query
   end
-  
-  return "/" .. table.concat(new,"/")
+  return result
 end
 
 -- ************************************************************************
@@ -136,7 +114,8 @@ local function main(location,usecert)
     io.stderr:write("cannot connect to ",loc.host,"\n")
     return
   end
-  ios:write(normalize_directory(loc.path),"\r\n")
+  
+  ios:write(normalize_query(loc),"\r\n")
   
   local statline = ios:read("*l")
   if not statline then
