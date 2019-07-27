@@ -236,7 +236,7 @@ return function(remote,program,location)
       pipe.read:close()
     end
     
-    local args = parse_cgi_args:match(location.query) or {}
+    local args = parse_cgi_args:match(location.query or "") or {}
     
     process.exec(program,args,env)
     process._exit(exit.OSERR)
