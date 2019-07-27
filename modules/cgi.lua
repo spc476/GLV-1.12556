@@ -140,34 +140,13 @@ end
 
 -- ************************************************************************
 
-local function query_to_string(query)
-  if not query then
-    return ""
-  end
-  
-  local vars = uurl.query:match(query)
-  local res  = {}
-  
-  for name,val in pairs(vars) do
-    if val == true then
-      table.insert(res,name)
-    else
-      table.insert(res,string.format("%s=%s",name,val))
-    end
-  end
-  
-  return table.concat(res,"&")
-end
-
--- ************************************************************************
-
 return function(remote,program,location)
   local env =
   {
     PATH              = "/usr/local/bin:/usr/bin:/bin",
     
     GATEWAY_INTERFACE = "CGI/1.1",
-    QUERY_STRING      = query_to_string(location.query),
+    QUERY_STRING      = location.query,
     REMOTE_ADDR       = remote.addr,
     REMOTE_HOST       = remote.addr,
     REQUEST_METHOD    = "",
