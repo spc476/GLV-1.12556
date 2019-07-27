@@ -30,6 +30,7 @@ local io        = require "io"
 local math      = require "math"
 local string    = require "string"
 local table     = require "table"
+local uurl      = require "url-util"
 
 local tonumber = tonumber
 
@@ -134,7 +135,8 @@ end
 -- ************************************************************************
 
 function handler(_,_,loc,match)
-  local function redirect_here(path,book)
+
+  local function redirect_here(u,book)
     local selector = { book.book }
     
     if book.fcb then
@@ -150,8 +152,7 @@ function handler(_,_,loc,match)
       table.insert(selector,string.format(":%d",book.ve))
     end
     
-    path[#path] = table.concat(selector)
-    return string.format("/%s",table.concat(path,"/"))
+    return uurl.merge(u,{ path = table.concat(selector) })
   end
   
   -- ================================================
@@ -164,8 +165,8 @@ function handler(_,_,loc,match)
   end
   
   if redirect then
-    local here = redirect_here(loc.path,r)
-    return 301,here,""
+    local here = redirect_here(loc,r)
+    return 301,uurl.toa(here),""
   end
   
   -- ================================================
