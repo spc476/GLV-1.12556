@@ -218,7 +218,7 @@ return function(remote,program,location)
     local args = parse_cgi_args:match(location.query or "") or {}
     
     process.exec(program,args,env)
-    process._exit(exit.OSERR)
+    process.exit(exit.OSERR)
   end
   
   pipe.write:close()
