@@ -141,39 +141,6 @@ end
 -- ************************************************************************
 
 return function(remote,program,location,conf)
-  local env =
-  {
-    GATEWAY_INTERFACE = "CGI/1.1",
-    QUERY_STRING      = location.query,
-    REMOTE_ADDR       = remote.addr,
-    REMOTE_HOST       = remote.addr,
-    REQUEST_METHOD    = "",
-    SCRIPT_NAME       = program:sub(2,-1),
-    SERVER_NAME       = location.host,
-    SERVER_PORT       = tostring(location.port),
-    SERVER_PROTOCOL   = "GEMINI",
-    SERVER_SOFTWARE   = "GLV-1.12556/1",
-  }
-  
-  if conf.env then
-    for var,val in pairs(conf.env) do
-      env[var] = val
-    end
-  end
-  
-  -- ------------------------------------------------------------------------
-  -- The passed in dir is a relative path starting with "./".  So when
-  -- searching for dir in location.path, start just past the leading period.
-  -- ------------------------------------------------------------------------
-  
-  local _,e      = location.path:find(program:sub(2,-1),1,true)
-  local pathinfo = location.path:sub(e+1,-1)
-  
-  if pathinfo ~= "" then
-    env.PATH_INFO       = pathinfo
-    env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
-  end
-
   local pipe = makepipe()
   if not pipe then
     return 500,"Internal Error",""
@@ -185,6 +152,8 @@ return function(remote,program,location,conf)
     syslog('error',"process.fork() = %s",errno[err])
     return 500,"Internal Error",""
   end
+  
+  -- =========================================================
   
   if child == 0 then
     fsys.redirect(DEVNULI,io.stdin)
@@ -219,11 +188,54 @@ return function(remote,program,location,conf)
       pipe.read:close()
     end
     
+    local prog = fsys.getcwd() .. "/" .. program
     local args = parse_cgi_args:match(location.query or "") or {}
+    local env  =
+    {
+      GATEWAY_INTERFACE = "CGI/1.1",
+      QUERY_STRING      = location.query,
+      REMOTE_ADDR       = remote.addr,
+      REMOTE_HOST       = remote.addr,
+      REQUEST_METHOD    = "",
+      SCRIPT_NAME       = program:sub(2,-1),
+      SERVER_NAME       = location.host,
+      SERVER_PORT       = tostring(location.port),
+      SERVER_PROTOCOL   = "GEMINI",
+      SERVER_SOFTWARE   = "GLV-1.12556/1",
+    }
     
-    process.exec(program,args,env)
+    if conf.env then
+      for var,val in pairs(conf.env) do
+        env[var] = val
+      end
+    end
+    
+    -- -----------------------------------------------------------------------
+    -- The passed in dir is a relative path starting with "./".  So when
+    -- searching for dir in location.path, start just past the leading period.
+    -- -----------------------------------------------------------------------
+    
+    local _,e      = location.path:find(program:sub(2,-1),1,true)
+    local pathinfo = location.path:sub(e+1,-1)
+    
+    if pathinfo ~= "" then
+      env.PATH_INFO       = pathinfo
+      env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
+    end
+    
+    if conf.cwd then
+      local okay,err = fsys.chdir(conf.cwd)
+      if not okay then
+        syslog('error',"CGI cwd(%q) = %s",conf.cwd,errno[err])
+        process.exit(exit.CONFIG)
+      end
+    end
+    
+    process.exec(prog,args,env)
     process.exit(exit.OSERR)
   end
+  
+  -- =========================================================
   
   pipe.write:close()
   local inp  = fdtoios(pipe.read)
