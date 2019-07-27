@@ -188,7 +188,7 @@ return function(remote,program,location,conf)
       pipe.read:close()
     end
     
-    local prog = fsys.getcwd() .. "/" .. program
+    local prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
     local args = parse_cgi_args:match(location.query or "") or {}
     local env  =
     {
