@@ -123,6 +123,7 @@ end
 
 local url  = require "url"      -- XXX hack
 local uurl = require "url-util" -- XXX hack
+local cgi  = require "cgi"      -- XXX hack
 
 magic:flags('mime')
 syslog.open(CONF.log.ident,CONF.log.facility)
@@ -448,7 +449,6 @@ local function main(ios)
         return
       else
         if fsys.access(dir,"x") then
-          local cgi   = require "cgi"
           loc.scheme  = loc.scheme or "gemini"
           loc.host    = loc.host or CONF.network.host
           loc.port    = loc.port or CONF.network.port
