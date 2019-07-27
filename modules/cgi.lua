@@ -78,6 +78,19 @@ end
 
 -- ************************************************************************
 
+local parse_cgi_args do
+  local xdigit   = lpeg.locale().xdigit
+  local char     = lpeg.P"%" * lpeg.C(xdigit * xdigit)
+                 / function(c)
+                     return string.char(tonumber(c,16))
+                   end
+                 + (lpeg.R"!~" - lpeg.S' #%<>[\\]^{|}"=&+')
+  local args     = lpeg.Cs(char^1) * lpeg.P"+"^-1
+  parse_cgi_args = lpeg.Ct(args^1) * lpeg.P(-1)
+end
+
+-- ************************************************************************
+
 local function fdtoios(fd)
   local newfd   = ios()
   newfd.__fd    = fd
@@ -223,7 +236,9 @@ return function(remote,program,location)
       pipe.read:close()
     end
     
-    process.exec(program,{},env)
+    local args = parse_cgi_args:match(location.query) or {}
+    
+    process.exec(program,args,env)
     process._exit(exit.OSERR)
   end
   
