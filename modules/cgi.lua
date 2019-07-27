@@ -35,6 +35,7 @@ local io        = require "io"
 local table     = require "table"
 local string    = require "string"
 local coroutine = require "coroutine"
+local uurl      = require "url-util"
 
 local pairs     = pairs
 local tostring  = tostring
@@ -126,36 +127,15 @@ end
 
 -- ************************************************************************
 
-local function touripath(location)
-  local res = ""
-  for i = 1 , location.path._n do
-    res = res .. "/" .. location.path[i]
-  end
-  
-  return res
-end
-
--- ************************************************************************
-
-local function totranslate(location)
-  local res = ""
-  for i = location.path._n + 1, #location.path do
-    res = res .. "/" .. location.path[i]
-  end
-  
-  return res
-end
-
--- ************************************************************************
-
 local function query_to_string(query)
   if not query then
     return ""
   end
   
-  local res = {}
+  local vars = uurl.query:match(query)
+  local res  = {}
   
-  for name,val in pairs(query) do
+  for name,val in pairs(vars) do
     if val == true then
       table.insert(res,name)
     else
@@ -178,22 +158,26 @@ return function(remote,program,location)
     REMOTE_ADDR       = remote.addr,
     REMOTE_HOST       = remote.addr,
     REQUEST_METHOD    = "",
-    SCRIPT_NAME       = touripath(location),
+    SCRIPT_NAME       = program:sub(2,-1),
     SERVER_NAME       = location.host,
     SERVER_PORT       = tostring(location.port),
     SERVER_PROTOCOL   = "GEMINI",
     SERVER_SOFTWARE   = "GLV-1.12556/1",
   }
   
-  -- -------------------------------------------------------------------
-  -- XXX-a total hack.  I need to think on how to pass this info across
-  -- -------------------------------------------------------------------
+  -- ------------------------------------------------------------------------
+  -- The passed in dir is a relative path starting with "./".  So when
+  -- searching for dir in location.path, start just past the leading period.
+  -- ------------------------------------------------------------------------
   
-  if location.path._n < #location.path then
-    env.PATH_INFO       = totranslate(location)
+  local _,e      = location.path:find(program:sub(2,-1),1,true)
+  local pathinfo = location.path:sub(e+1,-1)
+  
+  if pathinfo ~= "" then
+    env.PATH_INFO       = pathinfo
     env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
   end
-  
+
   local pipe = makepipe()
   if not pipe then
     return 500,"Internal Error",""
