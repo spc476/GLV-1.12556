@@ -143,23 +143,6 @@ local redirect_subst do
 end
 
 -- ************************************************************************
---[[
-local function normalize_directory(path)
-  local new = {}
-  for _,segment in ipairs(path) do
-    if segment == ".." then
-      table.remove(new)
-    elseif segment ~= "." then
-      table.insert(new,segment)
-    end
-  end
-  
-  if new[#new] == "" then table.remove(new) end
-  
-  return new
-end
---]]
--- ************************************************************************
 
 local function descend_path(path)
   local function iter(state,var)
@@ -469,7 +452,6 @@ local function main(ios)
           loc.scheme  = loc.scheme or "gemini"
           loc.host    = loc.host or CONF.network.host
           loc.port    = loc.port or CONF.network.port
-          --loc.path._n = path._n
           local status,mime,data = cgi(ios.__remote,dir,loc)
           log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
         else
