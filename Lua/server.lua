@@ -452,7 +452,7 @@ local function main(ios)
           loc.scheme  = loc.scheme or "gemini"
           loc.host    = loc.host or CONF.network.host
           loc.port    = loc.port or CONF.network.port
-          local status,mime,data = cgi(ios.__remote,dir,loc)
+          local status,mime,data = cgi(ios.__remote,dir,loc,CONF.cgi)
           log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
         else
           local bytes = reply(ios,"200\t",magic(dir),"\r\n")

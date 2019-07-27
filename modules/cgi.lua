@@ -140,11 +140,9 @@ end
 
 -- ************************************************************************
 
-return function(remote,program,location)
+return function(remote,program,location,conf)
   local env =
   {
-    PATH              = "/usr/local/bin:/usr/bin:/bin",
-    
     GATEWAY_INTERFACE = "CGI/1.1",
     QUERY_STRING      = location.query,
     REMOTE_ADDR       = remote.addr,
@@ -156,6 +154,12 @@ return function(remote,program,location)
     SERVER_PROTOCOL   = "GEMINI",
     SERVER_SOFTWARE   = "GLV-1.12556/1",
   }
+  
+  if conf.env then
+    for var,val in pairs(conf.env) do
+      env[var] = val
+    end
+  end
   
   -- ------------------------------------------------------------------------
   -- The passed in dir is a relative path starting with "./".  So when
