@@ -215,6 +215,14 @@ end
 -- Note:        From RFC-3986 5.3
 -- ********************************************************************
 
+local SCHEMES =
+{
+  http   =   80,
+  https  =  443,
+  ftp    =   21,
+  gemini = 1965,
+}
+
 function toa(u)
   local authority
   
@@ -222,6 +230,9 @@ function toa(u)
     authority = ""
     if u.user then authority = u.user .. "@" end
     authority = authority .. u.host
+    if u.port and u.port ~= SCHEMES[u.scheme] then
+      authority = authority .. ':' .. tostring(u.port)
+    end
   end
   
   local result = ""
