@@ -55,6 +55,16 @@ local parse_headers do
   local R  = lpeg.R
   local S  = lpeg.S
   
+  local H do
+    local text = R("AZ","az") / function(c) return P(c:lower()) + P(c:upper()) end
+               + P(1)         / function(c) return P(c) end
+               
+    H = function(s)
+      local pattern = Cf(text^1,function(acc,pat) return acc * pat end)
+      return pattern:match(s) / s
+    end
+  end
+  
   local LWSP         = (abnf.WSP + abnf.CRLF * abnf.WSP)
   local text         = LWSP^1 / " "
                      + abnf.VCHAR
@@ -63,9 +73,9 @@ local parse_headers do
   local separator    = S'()<>@,;:\\"/[]?={}\t '
   local token        = (abnf.VCHAR - separator)^1
   
-  local status       = C"Status"       * P":" * LWSP * number * ignore^0 * abnf.CRLF
-  local content_type = C"Content-Type" * P":" * LWSP * Cs(text^1)        * abnf.CRLF
-  local location     = C"Location"     * P":" * LWSP * C(abnf.VCHAR^1)   * abnf.CRLF
+  local status       = H"Status"       * P":" * LWSP * number * ignore^0 * abnf.CRLF
+  local content_type = H"Content-Type" * P":" * LWSP * Cs(text^1)        * abnf.CRLF
+  local location     = H"Location"     * P":" * LWSP * C(abnf.VCHAR^1)   * abnf.CRLF
   local generic      = C(token)        * P":" * LWSP * C(text^0)         * abnf.CRLF
   local headers      = status + content_type + location + generic
   parse_headers      = Cf(Ct"" * Cg(headers)^1,function(acc,name,value)
