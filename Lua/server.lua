@@ -474,7 +474,7 @@ local function main(ios)
   end
   
   -- ---------------------------------------------------------------------
-  -- We're at the end of the request path, and we haven't hit a file yet. 
+  -- We're at the end of the request path, and we haven't hit a file yet.
   -- So serve up an index.  If "index.gemini" exists, serve that up,
   -- otherwise, make one up on the fly.
   -- ---------------------------------------------------------------------
@@ -498,12 +498,18 @@ local function main(ios)
       if entry:match(pattern) then return false end
     end
     
-    -- -----------------------------------------------------------
-    -- XXX check type and use 'r' for files, 'x' for directories,
-    -- exclude other types.
-    -- -----------------------------------------------------------
-    
-    return fsys.access(dir .. "/" .. entry,"r")
+    local fname = dir .. "/" .. entry
+    local info  = fsys.stat(fname)
+
+    if not info then
+      return false
+    elseif info.type == 'file' then
+      return fsys.access(fname,'r')
+    elseif info.type == 'dir' then
+      return fsys.access(fname,'x')
+    else
+      return false
+    end
   end
   
   for entry in fsys.dir(final) do
