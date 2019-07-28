@@ -60,32 +60,31 @@ relative_part   <- '//' authority {:path: path_abempty  :}
                 /                 {:path: path_empty    :}
                 
 authority       <- (userinfo '@')? host (':' port)?
-userinfo        <- {:user: {~ (unreserved / pct_encoded / sub_delims / ':')* ~} :}
+userinfo        <- {:user: {~ (unreserved / %pct_encoded / sub_delims / ':')* ~} :}
 host            <- {:host: IP_literal / %IPv4address / reg_name :}
 port            <- {:port: %DIGIT* -> tonumber :}
 
 IP_literal      <- '[' ( IPv6addrz / %IPv6address / IPvFuture) ']' -- RFC-6874
 IPvFuture       <- { 'v' %HEXDIG+ '.' (unreserved / sub_delims / ':')+ }
-ZoneID          <- {~ (unreserved / pct_encoded)+ ~}       -- RFC-6874
+ZoneID          <- {~ (unreserved / %pct_encoded)+ ~}       -- RFC-6874
 IPv6addrz       <- {~ %IPv6address '%25' -> '%%' ZoneID ~} -- RFC-6874
-reg_name        <- {~ (unreserved / pct_encoded / sub_delims)* ~}
+reg_name        <- {~ (unreserved / %pct_encoded / sub_delims)* ~}
 path            <- path_abempty  -- begins with '/' or is empty
                 /  path_absolute -- begins with '/' but not '//'
                 /  path_noscheme -- begins with a non-colon segment
                 /  path_rootless -- begins with a segment
                 /  path_empty
-path_abempty    <- { ( '/' segment)* }
-path_absolute   <- {   '/' (segment_nz ('/' segment)* )? }
-path_noscheme   <- { segment_nz_nc ('/' segment)* }
-path_rootless   <- { segment_nz    ('/' segment)* }
+path_abempty    <- {~ ( '/' segment)*                     ~}
+path_absolute   <- {~   '/' (segment_nz ('/' segment)* )? ~}
+path_noscheme   <- {~ segment_nz_nc ('/' segment)*        ~}
+path_rootless   <- {~ segment_nz    ('/' segment)*        ~}
 path_empty      <- { }
-segment         <- {~ pchar* ~}
-segment_nz      <- {~ pchar+ ~}
-segment_nz_nc   <- {~ (unreserved / pct_encoded / sub_delims / ';' / '@')+ ~}
-pchar           <-  unreserved / pct_encoded / sub_delims / ':' / '@'
+segment         <- pchar*
+segment_nz      <- pchar+
+segment_nz_nc   <- (unreserved / %pct_encoded / sub_delims / '@')+
+pchar           <-  unreserved / %pct_encoded / sub_delims / '@' / ':'
 query           <- {:query:    {  (pchar / '/' / '?')*  } :}
 fragment        <- {:fragment: {~ (pchar / '/' / '?')* ~} :}
-pct_encoded     <- %pct_encoded
 reserved        <- gen_delims / sub_delims
 gen_delims      <- ':' / '/' / '?' / '#' / '[' / ']' / '@'
 sub_delims      <- '!' / '$' / '&' / "'" / '(' / ')'
