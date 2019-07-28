@@ -85,6 +85,8 @@ local parse_headers do
 end
 
 -- ************************************************************************
+-- Handle script command line arguments per RFC-3875 section 4.4
+-- ************************************************************************
 
 local parse_cgi_args do
   local xdigit   = lpeg.locale().xdigit
