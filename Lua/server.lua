@@ -59,6 +59,10 @@ do
     package.cpath = CONF.cmodules .. ";" .. package.cpath
   end
   
+  if not CONF.no_access then
+    CONF.no_access = {}
+  end
+  
   -- --------------------------------------------
   -- Make sure the redirect tables always exist.
   -- --------------------------------------------
@@ -72,7 +76,7 @@ do
   end
   
   -- --------------------------------------------------------------------
-  -- If we don't have any handlers, make sure we have the table exists.
+  -- If we don't have any handlers, make sure they now exist.
   -- If we do have handlers, load them up and initialize them.
   -- --------------------------------------------------------------------
   
@@ -151,7 +155,7 @@ local function descend_path(path)
     if n then
       assert(n ~= "..")
       assert(n ~= ".")
-      return var .. "/" .. n
+      return var .. "/" .. n,n
     end
   end
   
@@ -377,10 +381,18 @@ local function main(ios)
   local subject
   local issuer
   
-  for dir in descend_path(loc.path) do
-    -- ----------------------------------------------
-    -- We resume our regularly scheduled programming
-    -- ----------------------------------------------
+  for dir,segment in descend_path(loc.path) do
+    -- ----------------------------------------------------
+    -- Skip the following files that match these patterns
+    -- ----------------------------------------------------
+    
+    for _,pattern in ipairs(CONF.no_access) do
+      if segment:match(pattern) then
+        log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
+        ios:close()
+        return
+      end
+    end
     
     local info = fsys.stat(dir)
     
@@ -391,12 +403,7 @@ local function main(ios)
     end
     
     if info.mode.type == 'dir' then
-      if dir:match ".*/%." then
-        log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
-        ios:close()
-        return
-      end
-      
+    
       -- -------------------------------------------
       -- Do we have an issue with Unix permissions?
       -- -------------------------------------------
@@ -433,15 +440,7 @@ local function main(ios)
         return
       end
       
-      if dir:match ".*/%." then
-        log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
-        ios:close()
-        return
-      elseif dir:match "~$" then
-        log(ios,404,request,reply(ios,"404\tNot found\r\n"),subject,issuer)
-        ios:close()
-        return
-      elseif dir:match ".*%.gemini$" then
+      if segment:match ".*%.gemini$" then
         local bytes = reply(ios,"200\ttext/gemini\r\n")
                     + copy_file(ios,dir)
         log(ios,200,request,bytes,subject,issuer)
