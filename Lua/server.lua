@@ -252,12 +252,6 @@ end
 
 -- ************************************************************************
 
-local function makelink(dir,file)
-  return dir:sub(2,-1) .. "/" .. file
-end
-
--- ************************************************************************
-
 local function reply(ios,...)
   local bytes = 0
   
@@ -498,14 +492,14 @@ local function main(ios)
       if entry:match(pattern) then return false end
     end
     
-    local fname = dir .. "/" .. entry
+    local fname = dir .. entry
     local info  = fsys.stat(fname)
-
+    
     if not info then
       return false
-    elseif info.type == 'file' then
+    elseif info.mode.type == 'file' then
       return fsys.access(fname,'r')
-    elseif info.type == 'dir' then
+    elseif info.mode.type == 'dir' then
       return fsys.access(fname,'x')
     else
       return false
@@ -514,7 +508,7 @@ local function main(ios)
   
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
-      bytes = bytes + reply(ios,"=> ",makelink(loc.path,entry)," ",entry,"\r\n")
+      bytes = bytes + reply(ios,"=> ",entry,"\r\n")
     end
   end
   
