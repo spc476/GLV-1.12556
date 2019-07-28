@@ -377,9 +377,39 @@ local function main(ios)
   -- Regular file processing starts now
   -- -------------------------------------
   
-  local final = "."
   local subject
   local issuer
+  
+  -- =====================================================================
+  
+  local function write_file(file)
+    if fsys.access(file,"x") then
+      loc.scheme  = loc.scheme or "gemini"
+      loc.host    = loc.host or CONF.network.host
+      loc.port    = loc.port or CONF.network.port
+      local status,mime,data = cgi(ios.__remote,file,loc,CONF.cgi)
+      log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
+      return true
+    end
+    
+    if not fsys.access(file,"r") then
+      return false
+    end
+    
+    if file:match "%.gemini$" then
+      local bytes = reply(ios,"200\ttext/gemini\r\n")
+                  + copy_file(ios,file)
+      log(ios,200,request,bytes,subject,issuer)
+    else
+      local bytes = reply(ios,"200\t",magic(file),"\r\n")
+                  + copy_file(ios,file)
+      log(ios,200,request,bytes,subject,issuer)
+    end
+
+    return true
+  end
+  
+  -- =====================================================================
   
   for dir,segment in descend_path(loc.path) do
     -- ----------------------------------------------------
@@ -425,43 +455,17 @@ local function main(ios)
         return
       end
       
-      final = dir
       if s and not subject then subject = s end
       if i and not issuer  then issuer  = i end
       
     elseif info.mode.type == 'file' then
-      -- ------------------------------------
-      -- Do the Unix permissions allow this?
-      -- ------------------------------------
-      
-      if not fsys.access(dir,"r") then
+      if not write_file(dir) then
         log(ios,500,request,reply(ios,"500\tWTC?\r\n"),subject,issuer)
         ios:close()
-        return
       end
-      
-      if segment:match ".*%.gemini$" then
-        local bytes = reply(ios,"200\ttext/gemini\r\n")
-                    + copy_file(ios,dir)
-        log(ios,200,request,bytes,subject,issuer)
-        ios:close()
-        return
-      else
-        if fsys.access(dir,"x") then
-          loc.scheme  = loc.scheme or "gemini"
-          loc.host    = loc.host or CONF.network.host
-          loc.port    = loc.port or CONF.network.port
-          local status,mime,data = cgi(ios.__remote,dir,loc,CONF.cgi)
-          log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
-        else
-          local bytes = reply(ios,"200\t",magic(dir),"\r\n")
-                      + copy_file(ios,dir)
-          log(ios,200,request,bytes,subject,issuer)
-        end
-        ios:close()
-        return
-      end
-      
+      ios:close()
+      return
+          
     else
       log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
       ios:close()
@@ -469,39 +473,37 @@ local function main(ios)
     end
   end
   
-  if not final then
-    syslog('critical',"This should not happen")
-    log(ios,500,request,reply(ios,"500\tOops, internal error\r\n"),subject,issuer)
-    ios:close()
-    return
-  end
+  -- ---------------------------------------------------------------------
+  -- We're at the end of the request path, and we haven't hit a file yet. 
+  -- So serve up an index.  If "index.gemini" exists, serve that up,
+  -- otherwise, make one up on the fly.
+  -- ---------------------------------------------------------------------
   
-  local indexf = final .. "/index.gemini"
-  if fsys.access(indexf,"r") then
-    local bytes = reply(ios,"200\ttext/gemini\r\n")
-                + copy_file(ios,indexf)
-    log(ios,200,request,bytes,subject,issuer)
+  local final  = "."   .. loc.path
+  
+  if write_file(final .. "/index.gemini") then
     ios:close()
     return
   end
   
   local bytes = reply(ios,
         "200\ttext/gemini\r\n",
-        "Index of ",final:sub(2,-1),"\r\n",
+        "Index of ",loc.path,"\r\n",
         "---------------------------\r\n",
         "\r\n"
   )
   
   local function access_okay(dir,entry)
-    if entry:match "^%." then return false end
-    if entry:match "~$"  then return false end
-    if not fsys.access(dir .. "/" .. entry,"r") then return false end
-    return true
+    for _,pattern in ipairs(CONF.no_access) do
+      if entry:match(pattern) then return false end
+    end
+    
+    return fsys.access(dir .. "/" .. entry,"r")
   end
   
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
-      bytes = bytes + reply(ios,"=> ",makelink(final,entry)," ",entry,"\r\n")
+      bytes = bytes + reply(ios,"=> ",makelink(loc.path,entry)," ",entry,"\r\n")
     end
   end
   
