@@ -158,6 +158,8 @@ return function(remote,program,location,conf)
   end
   
   -- =========================================================
+  -- The child runs off to do its own thang ...
+  -- =========================================================
   
   if child == 0 then
     fsys.redirect(DEVNULI,io.stdin)
@@ -239,6 +241,8 @@ return function(remote,program,location,conf)
     process.exit(exit.OSERR)
   end
   
+  -- =========================================================
+  -- Meanwhile, back at the parent's place ...
   -- =========================================================
   
   pipe.write:close()
