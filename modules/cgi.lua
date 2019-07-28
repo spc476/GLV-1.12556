@@ -32,7 +32,6 @@ local nfl       = require "org.conman.nfl"
 local abnf      = require "org.conman.parsers.abnf"
 local lpeg      = require "lpeg"
 local io        = require "io"
-local table     = require "table"
 local string    = require "string"
 local coroutine = require "coroutine"
 local uurl      = require "url-util"
@@ -224,9 +223,9 @@ return function(remote,program,location,conf)
     end
     
     if conf.cwd then
-      local okay,err = fsys.chdir(conf.cwd)
+      local okay,err1 = fsys.chdir(conf.cwd)
       if not okay then
-        syslog('error',"CGI cwd(%q) = %s",conf.cwd,errno[err])
+        syslog('error',"CGI cwd(%q) = %s",conf.cwd,errno[err1])
         process.exit(exit.CONFIG)
       end
     end
