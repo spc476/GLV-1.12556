@@ -228,8 +228,12 @@ function toa(u)
   
   if u.host then
     authority = ""
-    if u.user then authority = u.user .. "@" end
-    authority = authority .. u.host
+    if u.user then authority = esc_auth:match(u.user) .. "@" end
+    if u.host:match"%:" then
+      authority = authority .. "[" .. esc_auth:match(u.host) .. "]"
+    else
+      authority = authority .. esc_auth:match(u.host)
+    end
     if u.port and u.port ~= SCHEMES[u.scheme] then
       authority = authority .. ':' .. tostring(u.port)
     end
@@ -237,7 +241,7 @@ function toa(u)
   
   local result = ""
   if u.scheme  then result = result .. u.scheme .. ':'   end
-  if authority then result = result .. "//" .. esc_auth:match(authority) end
+  if authority then result = result .. "//" .. authority end
                     result = result .. esc_path:match(u.path)
                     
   if u.query then
