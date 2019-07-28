@@ -498,6 +498,11 @@ local function main(ios)
       if entry:match(pattern) then return false end
     end
     
+    -- -----------------------------------------------------------
+    -- XXX check type and use 'r' for files, 'x' for directories,
+    -- exclude other types.
+    -- -----------------------------------------------------------
+    
     return fsys.access(dir .. "/" .. entry,"r")
   end
   
