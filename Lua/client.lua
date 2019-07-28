@@ -25,6 +25,7 @@
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
 local url    = require "url"
+local uurl   = require "url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
@@ -104,8 +105,10 @@ local function main(location,usecert)
     return
   end
   
-  local request = loc.path
-  if loc.query then loc.path = loc.path .. "?" .. loc.query end
+  local request = uurl.esc_path:match(loc.path)
+  if loc.query then
+    loc.path = loc.path .. "?" .. uurl.esc_query:match(loc.query)
+  end
   
   ios:write(request,"\r\n")
   

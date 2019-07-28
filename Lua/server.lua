@@ -508,7 +508,7 @@ local function main(ios)
   
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
-      bytes = bytes + reply(ios,"=> ",entry,"\r\n")
+      bytes = bytes + reply(ios,"=> ",uurl.esc_path:match(entry),"\t",entry,"\r\n")
     end
   end
   
