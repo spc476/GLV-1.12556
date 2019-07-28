@@ -25,23 +25,12 @@
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
 local url    = require "url"
-local uurl   = require "url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
 local CERT
 local KEY
 local NOVER
-
--- ************************************************************************
-
-local function normalize_query(loc)
-  local result = uurl.esc_path:match(loc.path)
-  if loc.query then
-    result = result .. "?" .. loc.query
-  end
-  return result
-end
 
 -- ************************************************************************
 
@@ -115,7 +104,10 @@ local function main(location,usecert)
     return
   end
   
-  ios:write(normalize_query(loc),"\r\n")
+  local request = loc.path
+  if loc.query then loc.path = loc.path .. "?" .. loc.query end
+  
+  ios:write(request,"\r\n")
   
   local statline = ios:read("*l")
   if not statline then
