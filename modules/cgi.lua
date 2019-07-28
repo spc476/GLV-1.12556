@@ -142,19 +142,13 @@ end
 
 -- ************************************************************************
 
-local function makepipe()
-  local fd = fsys.pipe()
-  fd.read:setvbuf('no')
-  return fd
-end
-
--- ************************************************************************
-
 return function(remote,program,location,conf)
-  local pipe = makepipe()
+  local pipe = fsys.pipe()
   if not pipe then
     return 500,"Internal Error",""
   end
+  
+  pipe.read:setvbuf('no') -- buffering kills the event loop
   
   local child,err = process.fork()
   
