@@ -492,7 +492,7 @@ local function main(ios)
       if entry:match(pattern) then return false end
     end
     
-    local fname = dir .. entry
+    local fname = dir .. "/" .. entry
     local info  = fsys.stat(fname)
     
     if not info then
