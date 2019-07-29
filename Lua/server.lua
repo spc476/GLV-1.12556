@@ -313,7 +313,10 @@ local function main(ios)
     return
   end
   
-  loc.path = uurl.rm_dot_segs:match(loc.path)
+  loc.scheme = loc.scheme or "gemini"
+  loc.host   = loc.host   or CONF.network.host
+  loc.port   = loc.port   or CONF.network.port
+  loc.path   = uurl.rm_dot_segs:match(loc.path)
   
   -- -------------------------------------------------------------
   -- We handle the various redirections here, the temporary ones,
@@ -378,9 +381,6 @@ local function main(ios)
   
   local function write_file(file)
     if fsys.access(file,"x") then
-      loc.scheme  = loc.scheme or "gemini"
-      loc.host    = loc.host or CONF.network.host
-      loc.port    = loc.port or CONF.network.port
       local status,mime,data = cgi(ios.__remote,file,loc,CONF.cgi)
       log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
       return true
