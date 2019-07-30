@@ -107,9 +107,10 @@ local function main(location,usecert)
   
   local request = uurl.esc_path:match(loc.path)
   if loc.query then
-    loc.path = loc.path .. "?" .. uurl.esc_query:match(loc.query)
+    request = request .. "?" .. loc.query
   end
   
+  print("<<<",request)
   ios:write(request,"\r\n")
   
   local statline = ios:read("*l")

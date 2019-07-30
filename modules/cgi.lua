@@ -199,7 +199,7 @@ return function(remote,program,location,conf)
     local env  =
     {
       GATEWAY_INTERFACE = "CGI/1.1",
-      QUERY_STRING      = location.query,
+      QUERY_STRING      = location.query or "",
       REMOTE_ADDR       = remote.addr,
       REMOTE_HOST       = remote.addr,
       REQUEST_METHOD    = "",
