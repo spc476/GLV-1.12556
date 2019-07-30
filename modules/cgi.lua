@@ -221,12 +221,46 @@ return function(remote,program,location,conf)
     -- searching for dir in location.path, start just past the leading period.
     -- -----------------------------------------------------------------------
     
-    local _,e      = location.path:find(program:sub(2,-1),1,true)    
+    local _,e      = location.path:find(program:sub(2,-1),1,true)
     local pathinfo = e and location.path:sub(e+1,-1) or location.path
     
     if pathinfo ~= "" then
       env.PATH_INFO       = pathinfo
       env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
+    end
+    
+    local function add_http()
+      env.REQUEST_METHOD       = "GET"
+      env.SERVER_PROTOCOL      = "HTTP/1.0"
+      env.HTTP_ACCEPT          = "*/*"
+      env.HTTP_ACCEPT_LANGUAGE = "*"
+      env.HTTP_CONNECTION      = "close"
+      env.HTTP_HOST            = env.SERVER_NAME
+      env.HTTP_REFERER         = ""
+      env.HTTP_USER_AGENT      = ""
+    end
+    
+    local function add_apache()
+      env.DOCUMENT_ROOT         = fsys.getcwd()
+      env.CONTEXT_DOCUMENT_ROOT = env.DOCUMENT_ROOT
+      env.CONTEXT_PREFIX        = ""
+      env.SCRIPT_FILENAME       = prog
+    end
+    
+    if conf.http     then add_http()   end
+    if conf.apache   then add_apache() end
+    if conf.instance then
+      for name,info in pairs(conf.instance) do
+        if location.path:match(name) then
+          if info.http   then add_http()   end
+          if info.apache then add_apache() end
+          if info.env then
+            for var,val in pairs(info.env) do
+              env[var] = val
+            end
+          end
+        end
+      end
     end
     
     if conf.cwd then
