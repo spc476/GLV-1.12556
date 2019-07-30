@@ -110,7 +110,6 @@ local function main(location,usecert)
     request = request .. "?" .. loc.query
   end
   
-  print("<<<",request)
   ios:write(request,"\r\n")
   
   local statline = ios:read("*l")
