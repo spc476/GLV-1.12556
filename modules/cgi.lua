@@ -247,13 +247,16 @@ return function(remote,program,location,conf)
       env.SCRIPT_FILENAME       = prog
     end
     
+    local cwd = conf.cwd
+    
     if conf.http     then add_http()   end
     if conf.apache   then add_apache() end
     if conf.instance then
       for name,info in pairs(conf.instance) do
         if location.path:match(name) then
-          if info.http   then add_http()   end
-          if info.apache then add_apache() end
+          if info.cwd    then cwd = info.cwd end
+          if info.http   then add_http()     end
+          if info.apache then add_apache()   end
           if info.env then
             for var,val in pairs(info.env) do
               env[var] = val
@@ -263,10 +266,10 @@ return function(remote,program,location,conf)
       end
     end
     
-    if conf.cwd then
-      local okay,err1 = fsys.chdir(conf.cwd)
+    if cwd then
+      local okay,err1 = fsys.chdir(cwd)
       if not okay then
-        syslog('error',"CGI cwd(%q) = %s",conf.cwd,errno[err1])
+        syslog('error',"CGI cwd(%q) = %s",cwd,errno[err1])
         process.exit(exit.CONFIG)
       end
     end
