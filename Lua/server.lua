@@ -180,21 +180,7 @@ end
 
 -- ************************************************************************
 
-local function authorized(ios,dir)
-  local pfname   = dir .. "/.private"
-  local okay,err = fsys.access(pfname,'r')
-  
-  -- --------------------------------------------------------------
-  -- If .private doesn't exist, we're okay to go.  Any other error
-  -- and we deny access just to be safe
-  -- --------------------------------------------------------------
-  
-  if not okay and err == errno.ENOENT then return true end
-  if not okay then
-    syslog('error',"%s: %s",pfname,errno[err])
-    return false,401,"Unauthorized"
-  end
-  
+local function authorized(tag,ios,checkf,loc)
   if not ios.__ctx:peer_cert_provided() then
     return false,460,"Need certificate"
   end
@@ -215,18 +201,38 @@ local function authorized(ios,dir)
     return false,462,"Expired Certificate",S,I
   end
   
+  local ok,auth = pcall(checkf,issuer,subject,loc)
+  if not ok then
+    syslog('error',"%s: %s",tag,auth)
+    return false,500,"Must not black out ... "
+  end
+  
+  return auth,463,"Rejected certificate",S,I
+end
+
+-- ************************************************************************
+
+local function authorized_dir(ios,dir,loc)
+  local pfname   = dir .. "/.private"
+  local okay,err = fsys.access(pfname,'r')
+  
+  -- --------------------------------------------------------------
+  -- If .private doesn't exist, we're okay to go.  Any other error
+  -- and we deny access just to be safe
+  -- --------------------------------------------------------------
+  
+  if not okay and err == errno.ENOENT then return true end
+  if not okay then
+    syslog('error',"%s: %s",pfname,errno[err])
+    return false,401,"Unauthorized"
+  end
+  
   local check = loadfile(pfname,"t",{})
   if not check then
     return false,500,"Lungs bleeding, ribs cracked ... "
   end
   
-  local ok,auth = pcall(check,issuer,subject)
-  if not ok then
-    syslog('error',"%s: %s",pfname,auth)
-    return false,500,"Must not black out ... "
-  end
-  
-  return auth,463,"Rejected certificate",S,I
+  return authorized(pfname,ios,check,loc)
 end
 
 -- ************************************************************************
@@ -381,7 +387,7 @@ local function main(ios)
   
   local function write_file(file)
     if fsys.access(file,"x") then
-      local status,mime,data = cgi(ios.__remote,file,loc,CONF.cgi)
+      local status,mime,data = cgi(ios.__ctx,ios.__remote,file,loc,CONF.cgi)
       log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
       return true
     end
@@ -442,7 +448,7 @@ local function main(ios)
       -- Does this directory have certificate requirements?
       -- ---------------------------------------------------
       
-      local auth,status,msg,s,i = authorized(ios,dir)
+      local auth,status,msg,s,i = authorized_dir(ios,dir,loc)
       if not auth then
         log(ios,status,request,reply(ios,string.format("%d\t%s\r\n",status,msg)),s,i)
         ios:close()
