@@ -25,7 +25,6 @@
 
 -- ************************************************************************
 
-local syslog   = require "org.conman.syslog"
 local abnf     = require "org.conman.parsers.abnf"
 local strftime = require "org.conman.parsers.strftime"
 local fsys     = require "org.conman.fsys"
@@ -85,7 +84,6 @@ end
 -- ************************************************************************
 
 function init(conf)
-  syslog('debug',"gRFC")
   CONF = conf
   return true
 end
@@ -93,7 +91,6 @@ end
 -- ************************************************************************
 
 function handler(_,_,_,match)
-  syslog('debug',"match=%s",match[1])
   if match[1] == "" then
     local reply = {}
     
@@ -102,7 +99,6 @@ function handler(_,_,_,match)
     table.insert(reply,"")
     
     for file in fsys.gexpand(CONF.dir .. "/[0-9][0-9][0-9][0-9]") do
-      syslog('debug',"file=%q",file)
       local f       = io.open(file,"r")
       local headers = parse_headers:match(f:read("*a"))
       f:close()
