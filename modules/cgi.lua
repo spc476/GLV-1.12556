@@ -329,7 +329,7 @@ return function(ssl,remote,program,location,conf)
     
     if conf.http     then add_http()              end
     if conf.apache   then add_apache()            end
-    if conf.envtls   then add_tlsenv(info.apache) end
+    if conf.envtls   then add_tlsenv(conf.apache) end
     
     if conf.instance then
       for name,info in pairs(conf.instance) do
