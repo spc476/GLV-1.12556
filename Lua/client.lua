@@ -64,6 +64,42 @@ local statparse do
                  + P"4" * DD * Cc'client'   * Cc'error'
                  + P"5" * DD * Cc'server'   * Cc'error'
                  
+                 -- ----------------------------------------------------
+                 -- Proposed 2-digit codes---The main categories aren't
+                 -- quite right, bit they're the closest to the current
+                 -- categories I'm using now.
+                 -- ----------------------------------------------------
+                 
+                 + P"10" * Cc'search'   * Cc'need-info'
+                 + P"20" * Cc'okay'     * Cc'content'
+                 + P"30" * Cc'redirect' * Cc'temporary'
+                 + P"31" * Cc'redirect' * Cc'permanent'
+                 + P"40" * Cc'server'   * Cc'error'
+                 + P"41" * Cc'server'   * Cc'overload'
+                 + P"42" * Cc'server'   * Cc'CGI-error'
+                 + P"43" * Cc'client'   * Cc'slow-down'
+                 + P"50" * Cc'server'   * Cc'error'
+                 + P"51" * Cc'client'   * Cc'not-found'
+                 + P"53" * Cc'client'   * Cc'gone'
+                 + P"59" * Cc'client'   * Cc'bad-request'
+                 + P"60" * Cc'client'   * Cc'need-certificate'
+                 + P"61" * Cc'client'   * Cc'need-certificate'
+                 + P"62" * Cc'client'   * Cc'need-certificate'
+                 + P"63" * Cc'client'   * Cc'rejected-certificate'
+                 + P"64" * Cc'client'   * Cc'future-certificate'
+                 + P"65" * Cc'client'   * Cc'expired-certificate'
+                 
+                 -- -----------------------------
+                 -- The proposed catch-all path
+                 -- -----------------------------
+                 
+                 + P"1" * R"09" * Cc'search'   * Cc'need-info'
+                 + P"2" * R"09" * Cc'okay'     * Cc'content'
+                 + P"3" * R"09" * Cc'redirect' * Cc'temporary'
+                 + P"4" * R"09" * Cc'server'   * Cc'error'
+                 + P"5" * R"09" * Cc'client'   * Cc'error'
+                 + P"6" * R"09" * Cc'server'   * Cc'need-certificate'
+                 
                  -- -----------------------------------
                  -- The "Official Spec" return codes.
                  -- -----------------------------------
@@ -73,7 +109,7 @@ local statparse do
                  + P"4"      * Cc'client'   * Cc'error'
                  + P"5"      * Cc'server'   * Cc'error'
                  + P"9"      * Cc'client'   * Cc'slow-down'
-                 
+                                  
   local infotype = P"\t" * C(R" \255"^0)
                  + Cc"type/text; charset=utf-8"
                  
