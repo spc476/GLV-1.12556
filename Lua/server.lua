@@ -514,7 +514,17 @@ local function main(ios)
   
   for entry in fsys.dir(final) do
     if access_okay(final,entry) then
-      bytes = bytes + reply(ios,"=> ",uurl.esc_path:match(entry),"\t",entry,"\r\n")
+      local filename
+      
+      if loc.path:match "/$" then
+        filename = loc.path .. entry
+      else
+        filename = loc.path .. "/" .. entry
+      end
+      
+      filename = uurl.rm_dot_segs:match(filename)
+      filename = uurl.esc_path:match(filename)
+      bytes    = bytes + reply(ios,"=> ",filename,"\t",entry,"\r\n")
     end
   end
   
