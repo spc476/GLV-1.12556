@@ -405,7 +405,7 @@ local function main(ios)
                   + copy_file(ios,file)
       log(ios,200,request,bytes,subject,issuer)
     end
-
+    
     return true
   end
   
@@ -465,7 +465,7 @@ local function main(ios)
       end
       ios:close()
       return
-          
+      
     else
       log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
       ios:close()
@@ -504,28 +504,60 @@ local function main(ios)
     if not info then
       return false
     elseif info.mode.type == 'file' then
-      return fsys.access(fname,'r')
+      return fsys.access(fname,'r'),'file'
     elseif info.mode.type == 'dir' then
-      return fsys.access(fname,'x')
+      return fsys.access(fname,'x'),'dir'
     else
       return false
     end
   end
   
+  local lists =
+  {
+    dir  = {},
+    file = {},
+  }
+  
   for entry in fsys.dir(final) do
-    if access_okay(final,entry) then
-      local filename
-      
-      if loc.path:match "/$" then
-        filename = loc.path .. entry
-      else
-        filename = loc.path .. "/" .. entry
-      end
-      
-      filename = uurl.rm_dot_segs:match(filename)
-      filename = uurl.esc_path:match(filename)
-      bytes    = bytes + reply(ios,"=> ",filename,"\t",entry,"\r\n")
+    local okay,type = access_okay(final,entry)
+    if okay then
+      table.insert(lists[type],entry)
     end
+  end
+  
+  table.sort(lists.dir)
+  table.sort(lists.file)
+  
+  for _,entry in ipairs(lists.dir) do
+    local filename
+    
+    if loc.path:match "/$" then
+      filename = loc.path .. entry .. "/"
+    else
+      filename = loc.path .. "/" .. entry .. "/"
+    end
+    
+    filename = uurl.rm_dot_segs:match(filename)
+    filename = uurl.esc_path:match(filename)
+    bytes    = bytes + reply(ios,"=> ",filename,"\t",entry,"/\r\n")
+  end
+  
+  if #lists.dir > 0 then
+    bytes = bytes + reply(ios,"\r\n")
+  end
+  
+  for _,entry in ipairs(lists.file) do
+    local filename
+    
+    if loc.path:match "/$" then
+      filename = loc.path .. entry
+    else
+      filename = loc.path .. "/" .. entry
+    end
+    
+    filename = uurl.rm_dot_segs:match(filename)
+    filename = uurl.esc_path:match(filename)
+    bytes    = bytes + reply(ios,"=> ",filename,"\t",entry,"\r\n")
   end
   
   bytes = bytes + reply(ios,
