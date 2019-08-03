@@ -109,7 +109,20 @@ local statparse do
                  + P"4"      * Cc'client'   * Cc'error'
                  + P"5"      * Cc'server'   * Cc'error'
                  + P"9"      * Cc'client'   * Cc'slow-down'
-                                  
+                 
+                 -- ---------------------------------------------------
+                 -- The proposed 1-dight status codes---Most of these
+                 -- match the existing structure and only add to them.
+                 -- ---------------------------------------------------
+                 
+                 + P"1"      * Cc'search' * Cc'need-info'
+                 + P"6"      * Cc'client' * Cc'gone'
+                 + P"7"      * Cc'client' * Cc'slow-down'
+                 + P"A"      * Cc'client' * Cc'need-certificate'
+                 + P"B"      * Cc'client' * Cc'need-certificate'
+                 + P"C"      * Cc'client' * Cc'rejected-certificate'
+                 + P"D"      * Cc'cilent' * Cc'expired-certificate'
+                 
   local infotype = P"\t" * C(R" \255"^0)
                  + Cc"type/text; charset=utf-8"
                  
