@@ -161,12 +161,12 @@ function handler(_,_,loc,match)
   local buffer     = {}
   
   if not r then
-    return 404,"Not Found",""
+    return 51,"Not Found",""
   end
   
   if redirect then
     local here = redirect_here(loc,r)
-    return 301,uurl.toa(here),""
+    return 31,uurl.toa(here),""
   end
   
   -- ================================================
@@ -241,7 +241,7 @@ function handler(_,_,loc,match)
     show_chapter(chapter,vb,ve)
   end
   
-  return 200,"text/plain",table.concat(buffer)
+  return 20,"text/plain",table.concat(buffer)
 end
 
 -- ************************************************************************

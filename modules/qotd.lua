@@ -95,7 +95,7 @@ function handler()
     QUOTES:seek('set',0)
   end
   
-  return 200,"text/plain",quote
+  return 20,"text/plain",quote
 end
 
 -- ************************************************************************

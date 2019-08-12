@@ -34,6 +34,25 @@ local tls       = require "org.conman.nfl.tls"
 local lpeg      = require "lpeg"
 
 local CONF = {}
+local MSG  =
+{
+  [40] = "Temporary Error",
+  [41] = "Server Unavailable",
+  [42] = "CGI Error",
+  [43] = "Proxy Error",
+  [44] = "Slow Down",
+  [50] = "Permanent Error",
+  [51] = "Not Found",
+  [52] = "Gone",
+  [53] = "Proxy Request Refused",
+  [59] = "Bad Request",
+  [60] = "Client Certificate Required",
+  [61] = "Transient Certificate Required",
+  [62] = "Authorized Certicate Required",
+  [63] = "Certificate Not Accepted",
+  [64] = "Future Certificate Rejected",
+  [65] = "Expired Certificate Rejected",
+}
 
 -- ************************************************************************
 
@@ -182,7 +201,13 @@ end
 
 local function authorized(tag,ios,checkf,loc)
   if not ios.__ctx:peer_cert_provided() then
-    return false,460,"Need certificate"
+    local ok,auth,status = pcall(checkf)
+    if not ok then
+      syslog('error',"%s: %s",tag,auth)
+      return false,40
+    else
+      return false,status or 60
+    end
   end
   
   local I         = ios.__ctx:peer_cert_issuer()
@@ -194,20 +219,20 @@ local function authorized(tag,ios,checkf,loc)
   local now       = os.time()
   
   if now < notbefore then
-    return false,461,"Future Certificate",S,I
+    return false,64,S,I
   end
   
   if now > notafter then
-    return false,462,"Expired Certificate",S,I
+    return false,65,S,I
   end
   
   local ok,auth = pcall(checkf,issuer,subject,loc)
   if not ok then
     syslog('error',"%s: %s",tag,auth)
-    return false,500,"Must not black out ... "
+    return false,40
   end
   
-  return auth,463,"Rejected certificate",S,I
+  return auth,63,S,I
 end
 
 -- ************************************************************************
@@ -224,12 +249,13 @@ local function authorized_dir(ios,dir,loc)
   if not okay and err == errno.ENOENT then return true end
   if not okay then
     syslog('error',"%s: %s",pfname,errno[err])
-    return false,401,"Unauthorized"
+    return false,60
   end
   
-  local check = loadfile(pfname,"t",{})
+  local check,err1 = loadfile(pfname,"t",{})
   if not check then
-    return false,500,"Lungs bleeding, ribs cracked ... "
+    syslog('error',"%s: %s",pfname,err1)
+    return false,40
   end
   
   return authorized(pfname,ios,check,loc)
@@ -292,36 +318,34 @@ local function main(ios)
   
   local request = ios:read("*l")
   if not request then
-    log(ios,400,"",reply(ios,"400\tBad Request\r\n"))
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
   
   local loc = url:match(request)
   if not loc then
-    log(ios,400,request,reply(ios,"400\tBad reqeust\r\n"))
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
   
-  -- ---------------------------------------------------------------------
-  -- I actually accept URLs as the request---this way, if we support more
-  -- than one host, we can switch among them on the server.  We don't
-  -- support that here, since I haven't learned how to generate a server
-  -- certificate for more than one host.  But it *could* be a possiblity.
-  -- ---------------------------------------------------------------------
-  
-  if loc.scheme and loc.scheme ~= 'gemini'
-  or loc.host   and loc.host   ~= CONF.network.host
-  or loc.port   and loc.port   ~= CONF.network.port then
-    log(ios,400,request,reply(ios,"400\tBad Request\r\n"))
+  if not loc.host then
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
   
   loc.scheme = loc.scheme or "gemini"
-  loc.host   = loc.host   or CONF.network.host
-  loc.port   = loc.port   or CONF.network.port
+  
+  if loc.scheme ~= 'gemini'
+  or loc.host   ~= CONF.network.host
+  or loc.port   ~= CONF.network.port then
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    ios:close()
+    return
+  end
+  
   loc.path   = uurl.rm_dot_segs:match(loc.path)
   
   -- -------------------------------------------------------------
@@ -333,7 +357,7 @@ local function main(ios)
     local match = table.pack(loc.path:match(pattern))
     if #match > 0 then
       local new = redirect_subst:match(replace,1,match)
-      log(ios,302,request,reply(ios,"302\t",new,"\r\n"))
+      log(ios,30,request,reply(ios,"30\t",new,"\r\n"))
       ios:close()
       return
     end
@@ -343,7 +367,7 @@ local function main(ios)
     local match = table.pack(loc.path:match(pattern))
     if #match > 0 then
       local new = redirect_subst:match(replace,1,match)
-      log(ios,301,request,reply(ios,"301\t",new,"\r\n"))
+      log(ios,31,request,reply(ios,"31\t",new,"\r\n"))
       ios:close()
       return
     end
@@ -351,7 +375,7 @@ local function main(ios)
   
   for _,pattern in ipairs(CONF.redirect.gone) do
     if loc.path:match(pattern) then
-      log(ios,410,request,reply(ios,"410\tNo Longer here\r\n"))
+      log(ios,52,request,reply(ios,"52\t",MSG[52],"\r\n"))
       ios:close()
       return
     end
@@ -366,7 +390,7 @@ local function main(ios)
     if #match > 0 then
       local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
       if not okay then
-        log(ios,500,request,reply(ios,"500\tInternal Error\r\n"))
+        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"))
         syslog('error',"request=%s error=%s",request,status)
       else
         log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
@@ -397,13 +421,13 @@ local function main(ios)
     end
     
     if file:match "%.gemini$" then
-      local bytes = reply(ios,"200\ttext/gemini\r\n")
+      local bytes = reply(ios,"20\ttext/gemini\r\n")
                   + copy_file(ios,file)
-      log(ios,200,request,bytes,subject,issuer)
+      log(ios,20,request,bytes,subject,issuer)
     else
-      local bytes = reply(ios,"200\t",magic(file),"\r\n")
+      local bytes = reply(ios,"20\t",magic(file),"\r\n")
                   + copy_file(ios,file)
-      log(ios,200,request,bytes,subject,issuer)
+      log(ios,20,request,bytes,subject,issuer)
     end
     
     return true
@@ -418,7 +442,7 @@ local function main(ios)
     
     for _,pattern in ipairs(CONF.no_access) do
       if segment:match(pattern) then
-        log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
+        log(ios,51,request,reply(ios,"51\t",MSG[51],"\r\n"),subject,issuer)
         ios:close()
         return
       end
@@ -427,7 +451,7 @@ local function main(ios)
     local info = fsys.stat(dir)
     
     if not info then
-      log(ios,404,request,reply(ios,"404\tNot Found\r\n"))
+      log(ios,51,request,reply(ios,"51\t",MSG[51],"\r\n"),subject,issuer)
       ios:close()
       return
     end
@@ -439,7 +463,8 @@ local function main(ios)
       -- -------------------------------------------
       
       if not fsys.access(dir,"x") then
-        log(ios,500,request,reply(ios,"500\tHow did this happen?\r\n"),subject,issuer)
+        syslog('error',"access(%q) failed",dir)
+        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),subject,issuer)
         ios:close()
         return
       end
@@ -460,14 +485,15 @@ local function main(ios)
       
     elseif info.mode.type == 'file' then
       if not write_file(dir) then
-        log(ios,500,request,reply(ios,"500\tWTC?\r\n"),subject,issuer)
+        syslog('error',"type(%q) = %s",dir,info.mode.type)
+        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),subject,issuer)
         ios:close()
       end
       ios:close()
       return
       
     else
-      log(ios,404,request,reply(ios,"404\tNot Found\r\n"),subject,issuer)
+      log(ios,51,request,reply(ios,"51\t",MSG[51],"\r\n"),subject,issuer)
       ios:close()
       return
     end
@@ -487,7 +513,7 @@ local function main(ios)
   end
   
   local bytes = reply(ios,
-        "200\ttext/gemini\r\n",
+        "20\ttext/gemini\r\n",
         "Index of ",loc.path,"\r\n",
         "---------------------------\r\n",
         "\r\n"
@@ -565,7 +591,7 @@ local function main(ios)
         "---------------------------\r\n",
         "GLV-1.12556\r\n"
   )
-  log(ios,200,request,bytes,subject,issuer)
+  log(ios,20,request,bytes,subject,issuer)
   ios:close()
 end
 

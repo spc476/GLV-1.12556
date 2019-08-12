@@ -122,19 +122,19 @@ function handler(_,_,_,match)
     table.insert(reply,"---------------------------")
     table.insert(reply,"GLV-1.12556")
     
-    return 200,"text/gemini",table.concat(reply,"\r\n") .. "\r\n"
+    return 20,"text/gemini",table.concat(reply,"\r\n") .. "\r\n"
     
   else
     local f = io.open(CONF.dir .. "/" .. match[1],"r")
     if not f then
-      return 404,"Not found",""
+      return 51,"Not found",""
     end
     
     local d       = f:read("*a")
     local headers = parse_headers:match(d)
     local reply   = parse_body:match(d)
     f:close()
-    return 200,headers['Content-Type'],table.concat(reply,"\r\n") .. "\r\n"
+    return 20,headers['Content-Type'],table.concat(reply,"\r\n") .. "\r\n"
   end
 end
 

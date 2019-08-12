@@ -163,7 +163,7 @@ end
 return function(ssl,remote,program,location,conf)
   local pipe = fsys.pipe()
   if not pipe then
-    return 500,"Internal Error",""
+    return 40,"Temporary Error",""
   end
   
   pipe.read:setvbuf('no') -- buffering kills the event loop
@@ -172,7 +172,7 @@ return function(ssl,remote,program,location,conf)
   
   if not child then
     syslog('error',"process.fork() = %s",errno[err])
-    return 500,"Internal Error",""
+    return 40,"Temporary Error",""
   end
   
   -- =========================================================
@@ -372,7 +372,7 @@ return function(ssl,remote,program,location,conf)
   
   if not info then
     syslog('error',"process.wait() = %s",errno[err1])
-    return 500,"Internal Error",""
+    return 40,"Temporary Error",""
   end
   
   if info.status == 'normal' then
@@ -380,19 +380,19 @@ return function(ssl,remote,program,location,conf)
       local headers = parse_headers:match(hdrs)
       
       if headers['Location'] then
-        local status = headers['Status'] or 301
+        local status = headers['Status'] or 31
         return status,headers['Location'],""
       end
       
-      local status  = headers['Status'] or 200
+      local status  = headers['Status'] or 20
       local mime    = headers['Content-Type'] or "text/plain"
       return status,mime,data
     else
       syslog('warning',"program=%q status=%d",program,info.rc)
-      return 500,"Internal Error",""
+      return 40,"Temporary Error",""
     end
   else
     syslog('error',"program=%q status=%s description=%s",program,info.status,info.description)
-    return 500,"Internal Error",""
+    return 40,"Temporary Error",""
   end
 end
