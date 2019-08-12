@@ -42,12 +42,12 @@ local statparse do
   local P  = lpeg.P
   local R  = lpeg.R
   
-  local status   = P"1" * R"09" * Cc'input'    * Cc'required'
-                 + P"2" * R"09" * Cc'okay'     * Cc'content'
-                 + P"3" * R"09" * Cc'redirect' * Cc'temporary'
-                 + P"4" * R"09" * Cc'error'    * Cc'temporary'
-                 + P"5" * R"09" * Cc'error'    * Cc'permanent'
-                 + P"6" * R"09" * Cc'auth'     * Cc'required'
+  local status   = P"1" * R"09" * Cc'input'    * Cc'required'  * Cc(true)
+                 + P"2" * R"09" * Cc'okay'     * Cc'content'   * Cc(true)
+                 + P"3" * R"09" * Cc'redirect' * Cc'temporary' * Cc(true)
+                 + P"4" * R"09" * Cc'error'    * Cc'temporary' * Cc(true)
+                 + P"5" * R"09" * Cc'error'    * Cc'permanent' * Cc(true)
+                 + P"6" * R"09" * Cc'auth'     * Cc'required'  * Cc(true)
                  
                  + P"2"         * Cc'okay'     * Cc'content'
                  + P"3"         * Cc'redirect' * Cc'permanent'
@@ -106,17 +106,18 @@ local function main(location,usecert)
     return
   end
   
-  local system,status,info = statparse:match(statline)
+  local system,status,std,info = statparse:match(statline)
   if not system then
     io.stderr:write("bad reply: ",statline,"\n")
     ios:close()
     return
   end
   
-  io.stderr:write(string.format("system=%s status=%s info=%s\n",
+  io.stderr:write(string.format("system=%s status=%s info=%s%s\n",
         system,
         status,
-        info
+        info,
+        std and "" or "OUTDATED"
   ))
   
   if system == 'auth' then
@@ -143,6 +144,7 @@ usage: %s [options] url
         -c | --cert certificate
         -k | --key  keyfile
         -n | --noverify
+        -u | --url  send URL
         -h | --help this text
 ]]
 
