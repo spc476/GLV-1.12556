@@ -48,6 +48,7 @@ local DEVNULO = io.open("/dev/null","w")
 -- ************************************************************************
 
 local parse_headers do
+  local Cc = lpeg.Cc
   local Cf = lpeg.Cf
   local Cg = lpeg.Cg
   local Cs = lpeg.Cs
@@ -71,10 +72,34 @@ local parse_headers do
   local text         = LWSP^1 / " "
                      + abnf.VCHAR
   local ignore       = LWSP + abnf.VCHAR
-  local number       = R"09"^1 / tonumber
+  local code         = (R"16" * R"09" * #(P(1) - R"09")) / tonumber
+                     + (R"09" * R"09" * #(P(1) - R"09")) * Cc(50)
+                     -- ------------------------------------------
+                     -- Most common web status codes, translated
+                     -- ------------------------------------------
+                     
+                     + P"200" * Cc(20)
+                     + P"301" * Cc(31)
+                     + P"302" * Cc(30)
+                     + P"400" * Cc(59)
+                     + P"403" * Cc(60)
+                     + P"404" * Cc(51)
+                     + P"405" * Cc(59)
+                     + P"500" * Cc(40)
+                     + P"501" * Cc(40)
+                     
+                     -- ----------------
+                     -- Web catch all
+                     -- ----------------
+                     
+                     + P"2" * R"09" * R"09" * Cc(20)
+                     + P"3" * R"09" * R"09" * Cc(30)
+                     + P"4" * R"09" * R"09" * Cc(50)
+                     + P"5" * R"09" * R"09" * Cc(40)
+                     + R"09" * R"09" * R"09" * Cc(50)
   local separator    = S'()<>@,;:\\"/[]?={}\t '
   local token        = (abnf.VCHAR - separator)^1
-  local status       = H"Status"       * P":" * LWSP * number * ignore^0 * abnf.CRLF
+  local status       = H"Status"       * P":" * LWSP * code * ignore^0 * abnf.CRLF
   local content_type = H"Content-Type" * P":" * LWSP * Cs(text^1)        * abnf.CRLF
   local location     = H"Location"     * P":" * LWSP * C(abnf.VCHAR^1)   * abnf.CRLF
   local generic      = C(token)        * P":" * LWSP * C(text^0)         * abnf.CRLF
