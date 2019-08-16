@@ -473,9 +473,9 @@ local function main(ios)
       -- Does this directory have certificate requirements?
       -- ---------------------------------------------------
       
-      local auth,status,msg,s,i = authorized_dir(ios,dir,loc)
+      local auth,status,s,i = authorized_dir(ios,dir,loc)
       if not auth then
-        log(ios,status,request,reply(ios,string.format("%d\t%s\r\n",status,msg)),s,i)
+        log(ios,status,request,reply(ios,string.format("%d\t%s\r\n",status,MSG[status])),s,i)
         ios:close()
         return
       end
