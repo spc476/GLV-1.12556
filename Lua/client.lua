@@ -28,8 +28,8 @@ local url    = require "url"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
-local CERT
-local KEY
+local CERT = os.getenv("GEMINI_CERT")
+local KEY  = os.getenv("GEMINI_KEY")
 local NOVER
 
 -- ************************************************************************
@@ -116,11 +116,8 @@ end
 
 -- ************************************************************************
 
-CERT = os.getenv("GEMINI_CERT")
-KEY  = os.getenv("GEMINI_KEY")
-
-local URL do
-  local usage = [[
+local URL
+local usage = [[
 usage: %s [options] url
         -c | --cert certificate
         -k | --key  keyfile
@@ -128,25 +125,23 @@ usage: %s [options] url
         -h | --help this text
 ]]
 
-  local opts =
-  {
-    { "c" , "cert"     , true    , function(c) CERT  = c    end },
-    { "k" , "key"      , true    , function(k) KEY   = k    end },
-    { "n" , "noverify" , false   , function()  NOVER = true end },
-    { 'h' , "help"     , false   , function()
-        io.stderr:write(string.format(usage,arg[0]))
-        os.exit(false,true)
-      end
-    },
-  }
-  
-  if #arg == 0 then
-    io.stderr:write(string.format(usage,arg[0]))
-    os.exit(false,true)
-  end
-  
-  URL = arg[getopt(arg,opts)]
+local opts =
+{
+  { "c" , "cert"     , true    , function(c) CERT  = c    end },
+  { "k" , "key"      , true    , function(k) KEY   = k    end },
+  { "n" , "noverify" , false   , function()  NOVER = true end },
+  { 'h' , "help"     , false   , function()
+      io.stderr:write(string.format(usage,arg[0]))
+      os.exit(false,true)
+    end
+  },
+}
+
+if #arg == 0 then
+  io.stderr:write(string.format(usage,arg[0]))
+  os.exit(false,true)
 end
 
+URL = arg[getopt(arg,opts)]
 nfl.spawn(main,URL)
 nfl.client_eventloop()
