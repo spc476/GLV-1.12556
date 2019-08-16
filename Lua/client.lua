@@ -25,14 +25,12 @@
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
 local url    = require "url"
-local uurl   = require "url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
 local CERT
 local KEY
 local NOVER
-local SURL
 
 -- ************************************************************************
 
@@ -48,14 +46,8 @@ local statparse do
                  + P"4" * R"09" * Cc'error'    * Cc'temporary' * Cc(true)
                  + P"5" * R"09" * Cc'error'    * Cc'permanent' * Cc(true)
                  + P"6" * R"09" * Cc'auth'     * Cc'required'  * Cc(true)
-                 + P"2"         * Cc'okay'     * Cc'content'   * Cc(false)
-                 + P"3"         * Cc'redirect' * Cc'permanent' * Cc(false)
-                 + P"4"         * Cc'error'    * Cc'permanent' * Cc(false)
-                 + P"5"         * Cc'error'    * Cc'temporary' * Cc(false)
-                 + P"9"         * Cc'error'    * Cc'slow-down' * Cc(false)
   local infotype = P"\t" * C(R" \255"^0)
                  + Cc"type/text; charset=utf-8"
-                 
   statparse      = status * infotype
 end
 
@@ -85,18 +77,7 @@ local function main(location,usecert)
     return
   end
   
-  local request do
-    if SURL then
-      request = location
-    else
-      request = uurl.esc_path:match(loc.path)
-      if loc.query then
-        request = request .. "?" .. loc.query
-      end
-    end
-  end
-  
-  ios:write(request,"\r\n")
+  ios:write(location,"\r\n")
   
   local statline = ios:read("*l")
   if not statline then
@@ -144,7 +125,6 @@ usage: %s [options] url
         -c | --cert certificate
         -k | --key  keyfile
         -n | --noverify
-        -u | --url  send URL
         -h | --help this text
 ]]
 
@@ -153,7 +133,6 @@ usage: %s [options] url
     { "c" , "cert"     , true    , function(c) CERT  = c    end },
     { "k" , "key"      , true    , function(k) KEY   = k    end },
     { "n" , "noverify" , false   , function()  NOVER = true end },
-    { "u" , "url"      , false   , function()  SURL  = true end },
     { 'h' , "help"     , false   , function()
         io.stderr:write(string.format(usage,arg[0]))
         os.exit(false,true)
