@@ -412,7 +412,7 @@ local function main(ios)
   local function write_file(file)
     if fsys.access(file,"x") then
       local status,mime,data = cgi(ios.__ctx,ios.__remote,file,loc,CONF.cgi)
-      log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
+      log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data),subject,issuer)
       return true
     end
     

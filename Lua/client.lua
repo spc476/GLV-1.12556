@@ -48,12 +48,11 @@ local statparse do
                  + P"4" * R"09" * Cc'error'    * Cc'temporary' * Cc(true)
                  + P"5" * R"09" * Cc'error'    * Cc'permanent' * Cc(true)
                  + P"6" * R"09" * Cc'auth'     * Cc'required'  * Cc(true)
-                 
-                 + P"2"         * Cc'okay'     * Cc'content'
-                 + P"3"         * Cc'redirect' * Cc'permanent'
-                 + P"4"         * Cc'error'    * Cc'permanent'
-                 + P"5"         * Cc'error'    * Cc'temporary'
-                 + P"9"         * Cc'error'    * Cc'slow-down'
+                 + P"2"         * Cc'okay'     * Cc'content'   * Cc(false)
+                 + P"3"         * Cc'redirect' * Cc'permanent' * Cc(false)
+                 + P"4"         * Cc'error'    * Cc'permanent' * Cc(false)
+                 + P"5"         * Cc'error'    * Cc'temporary' * Cc(false)
+                 + P"9"         * Cc'error'    * Cc'slow-down' * Cc(false)
   local infotype = P"\t" * C(R" \255"^0)
                  + Cc"type/text; charset=utf-8"
                  
@@ -97,6 +96,7 @@ local function main(location,usecert)
     end
   end
   
+  io.stderr:write(string.format(">>> %q\n",request))
   ios:write(request,"\r\n")
   
   local statline = ios:read("*l")
@@ -106,6 +106,7 @@ local function main(location,usecert)
     return
   end
   
+  io.stderr:write("<<< ",statline)
   local system,status,std,info = statparse:match(statline)
   if not system then
     io.stderr:write("bad reply: ",statline,"\n")
