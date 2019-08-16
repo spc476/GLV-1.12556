@@ -96,7 +96,6 @@ local function main(location,usecert)
     end
   end
   
-  io.stderr:write(string.format(">>> %q\n",request))
   ios:write(request,"\r\n")
   
   local statline = ios:read("*l")
@@ -106,7 +105,7 @@ local function main(location,usecert)
     return
   end
   
-  io.stderr:write("<<< ",statline)
+  io.stderr:write("<<< ",statline,"\n")
   local system,status,std,info = statparse:match(statline)
   if not system then
     io.stderr:write("bad reply: ",statline,"\n")
