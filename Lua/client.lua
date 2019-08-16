@@ -25,6 +25,7 @@
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
 local url    = require "url"
+local uurl   = require "url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
 
@@ -105,9 +106,16 @@ local function main(location,usecert)
     if status == 'required' and CERT and KEY then
       return main(location,true)
     end
-  end
+    
+  elseif system == 'redirect' then
+    local where  = url:match(info)
+    local new    = uurl.merge(loc,where)
+    local newloc = uurl.toa(new)
+    
+    io.stderr:write("--- ",newloc,"\n")
+    return main(newloc,usecert)
   
-  if system == 'okay' then
+  elseif system == 'okay' then
     io.stdout:write(ios:read("*a"))
   end
   
