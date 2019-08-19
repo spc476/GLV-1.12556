@@ -150,6 +150,12 @@ handlers =
     dir    = "gRFC",
     path   = "/gRFC",
   },
+  
+  ['^/test/torture/(.*)'] =
+  {
+    module = "torture",
+    dir    = "torture",
+  }
 }
 --]]
 
