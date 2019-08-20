@@ -599,6 +599,7 @@ end
 
 local okay,err = tls.listena(CONF._internal.addr,main,function(conf)
   conf:verify_client_optional()
+  conf:insecure_no_verify_cert()
   return conf:cert_file(CONF.certificate.cert)
      and conf:key_file (CONF.certificate.key)
      and conf:protocols("all")
