@@ -63,6 +63,7 @@ local parse_headers,parse_body do
   local separator    = S'()<>@,;:\\"/[]?={}\t '
   local token        = (abnf.VCHAR - separator)^1
   local number       = R"09"^1 / tonumber
+  local title        = H"Title"        * P":" * LWSP * Cs(text^1) * abnf.CRLF
   local status       = H"Status"       * P":" * LWSP * number     * abnf.CRLF
   local content_type = H"Content-Type" * P":" * LWSP * Cs(text^1) * abnf.CRLF
   local location     = H"Location"     * P":" * LWSP * Cs(text^1) * abnf.CRLF
