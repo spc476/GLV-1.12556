@@ -22,9 +22,11 @@
 -- luacheck: globals init fini handler
 -- luacheck: ignore 611
 
+local fsys   = require "org.conman.fsys"
 local abnf   = require "org.conman.parsers.abnf"
 local lpeg   = require "lpeg"
 local io     = require "io"
+local string = require "string"
 local table  = require "table"
 
 local tonumber = tonumber
@@ -87,20 +89,51 @@ end
 -- ************************************************************************
 
 function handler(_,_,_,match)
-  if match[1] == "" then
-    match[1] = "0000"
+  local function readfile(name)
+    local f = io.open(CONF.dir .. "/" .. name,"r")
+    if f then
+      local d = f:read("*a")
+      local headers,pos = parse_headers:match(d)
+      local body        = parse_body:match(d,pos)
+      f:close()
+      return headers,body
+    end
   end
   
-  local f = io.open(CONF.dir .. "/" .. match[1],"r")
-  if not f then
+  local headers
+  local body
+  
+  if match[1] == "" or match[1] == "0000" then
+    headers,body = readfile("0000")
+    table.insert(body,"")
+    table.insert(body,"List of tests")
+    table.insert(body,"")
+    
+    for file in fsys.gexpand(CONF.dir .. "/[0-9][0-9][0-9][0-9]") do
+      local f   = io.open(file,"r")
+      local hdr = parse_headers:match(f:read("*a"))
+      f:close()
+      
+      local name = fsys.basename(file)
+      table.insert(
+        body,
+        string.format([[=> %s %s %s]],
+        	name,
+        	name,
+        	hdr['Title']
+        )
+      )
+    end
+    
+  else
+    headers,body = readfile(match[1])
+  end
+  
+  if not headers then
     return 51,"Not found",""
   end
-    
-  local d = f:read("*a")
-  local headers,pos = parse_headers:match(d)
-  local reply       = parse_body:match(d,pos)
-  f:close()  
-  return headers['Status'],headers['Content-Type'],table.concat(reply,"\r\n") .. "\r\n"
+  
+  return headers['Status'],headers['Content-Type'],table.concat(body,"\r\n") .. "\r\n"
 end
 
 -- ************************************************************************
