@@ -24,7 +24,7 @@
 
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
-local url    = require "url"
+local url    = require "org.conman.parsers.url"
 local uurl   = require "url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"

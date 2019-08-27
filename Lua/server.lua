@@ -31,6 +31,7 @@ local errno     = require "org.conman.errno"
 local net       = require "org.conman.net"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
+local url       = require "org.conman.parsers.url"
 local lpeg      = require "lpeg"
 
 local CONF = {}
@@ -144,7 +145,6 @@ do
   end
 end
 
-local url  = require "url"      -- XXX hack
 local uurl = require "url-util" -- XXX hack
 local cgi  = require "cgi"      -- XXX hack
 
