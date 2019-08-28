@@ -283,6 +283,17 @@ cgi =
         SAMPLE_CONFIG = "sample.conf",
       }
     },
+    
+    ['^/torture/(.*)'] =
+    {
+      module = "torture",
+      dir    = "torture",
+    },
+    
+    ['^(/hilo/)(.*)'] =
+    {
+      module = "hilo",
+    },
   }
 }
 --]]
