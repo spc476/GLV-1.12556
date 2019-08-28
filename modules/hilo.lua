@@ -52,7 +52,7 @@ function handler(_,_,loc,match)
   
   local num = tonumber(match[2])
   if not num then
-    return 59,"bad request",""
+    return 10,"Guess a number",""
   end
   
   num = num % 97
