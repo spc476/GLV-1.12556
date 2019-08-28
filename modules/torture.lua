@@ -69,7 +69,7 @@ local parse_headers,parse_body do
   local location     = H"Location"     * P":" * LWSP * Cs(text^1) * abnf.CRLF
   local reason       = H"Reason"       * P":" * LWSP * Cs(text^1) * abnf.CRLF
   local generic      = C(token)        * P":" * LWSP * C(text^0)  * abnf.CRLF
-  local headers      = status + content_type + location + reason + generic
+  local headers      = title + status + content_type + location + reason + generic
   parse_headers      = Cf(Ct"" * Cg(headers)^1,function(acc,name,value)
                          acc[name] = value
                          return acc
@@ -119,9 +119,9 @@ function handler(_,_,_,match)
       table.insert(
         body,
         string.format([[=> %s %s %s]],
-        	name,
-        	name,
-        	hdr['Title']
+                name,
+                name,
+                hdr['Title']
         )
       )
     end
