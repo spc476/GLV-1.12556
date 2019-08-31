@@ -38,7 +38,7 @@ function handler(_,_,loc,match)
         .. "I'm thinking of a number between 1 and 100.  Click the\r\n"
         .. "link below to guess my number!\r\n"
         .. "\r\n"
-        .. string.format("=> %s/%d Hazzard a guess\r\n",match[1],math.random(100) + 1000)
+        .. string.format("=> %s%d Hazzard a guess\r\n",match[1],math.random(100) + 1000)
   end
   
   if not loc.query then
