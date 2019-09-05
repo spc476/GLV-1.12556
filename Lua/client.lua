@@ -69,7 +69,7 @@ local function main(location,usecert)
       conf:insecure_no_verify_time()
       conf:insecure_no_verify_cert()
     end
-
+    
     return conf:protocols "all"
   end)
   
@@ -78,7 +78,11 @@ local function main(location,usecert)
     return
   end
   
-  ios:write(location,"\r\n")
+  local okay,err = ios:write(location,"\r\n")
+  if not okay then
+    io.stderr:write("ios:write() = ",err,"\n")
+    return
+  end
   
   local statline = ios:read("*l")
   if not statline then
@@ -114,7 +118,7 @@ local function main(location,usecert)
     
     io.stderr:write("--- ",newloc,"\n")
     return main(newloc,usecert)
-  
+    
   elseif system == 'okay' then
     io.stdout:write(ios:read("*a"))
   end
