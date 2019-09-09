@@ -44,6 +44,10 @@ function init(conf)
     conf.index = "index.gemini"
   end
   
+  if not conf.no_access then
+    conf.no_access = { "^%." }
+  end
+  
   magic:flags 'mime'
   return true
 end
