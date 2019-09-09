@@ -27,7 +27,6 @@ local exit      = require "org.conman.const.exit"
 local syslog    = require "org.conman.syslog"
 local fsys      = require "org.conman.fsys"
 local magic     = require "org.conman.fsys.magic"
-local errno     = require "org.conman.errno"
 local net       = require "org.conman.net"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
@@ -129,7 +128,6 @@ do
 end
 
 local uurl = require "url-util" -- XXX hack
-local cgi  = require "cgi"      -- XXX hack
 local MSG  = require "MSG"      -- XXX hack
 
 magic:flags('mime')
