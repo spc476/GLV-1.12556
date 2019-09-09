@@ -59,6 +59,10 @@ do
     package.cpath = CONF.cmodules .. ";" .. package.cpath
   end
   
+  if not CONF.network.port then
+    CONF.network.port = 1965
+  end
+  
   -- --------------------------------------------
   -- Make sure the redirect tables always exist.
   -- --------------------------------------------
