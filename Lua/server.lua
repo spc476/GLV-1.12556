@@ -188,8 +188,8 @@ local function log(ios,status,request,bytes,auth)
         status,
         request,
         bytes,
-        auth and auth.subject or "",
-        auth and auth.issuer  or ""
+        auth and auth.S or "",
+        auth and auth.I or ""
   )
 end
 
