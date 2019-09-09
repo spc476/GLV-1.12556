@@ -269,7 +269,7 @@ local function main(ios)
   -- authorization checks across handlers
   -- --------------------------------------------------------------
   
-  local auth = { _remote = ios.__remote }
+  local auth = { _remote = ios.__remote.addr }
   
   for _,rule in ipairs(CONF.authorization) do
     if loc.path:match(rule.path) then
