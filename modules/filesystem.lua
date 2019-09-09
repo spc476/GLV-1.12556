@@ -172,17 +172,7 @@ function handler(conf,auth,loc,match)
   table.sort(lists.file)
   
   for _,entry in ipairs(lists.dir) do
-    local filename
-    
-    if match[1]:match "/$" then
-      filename = match[1] .. entry .. "/"
-    else
-      filename = match[1] .. "/" .. entry .. "/"
-    end
-    
-    filename = uurl.rm_dot_segs:match(filename)
-    filename = uurl.esc_path:match(filename)
-    table.insert(res,string.format("=> %s\t%s",filename,entry))
+    table.insert(res,string.format("=> %s/\t%s/",uurl.esc_path:match(entry),entry))
   end
   
   if #lists.dir > 0 then
@@ -190,17 +180,7 @@ function handler(conf,auth,loc,match)
   end
   
   for _,entry in ipairs(lists.file) do
-    local filename
-    
-    if match[1]:match "/$" then
-      filename = match[1] .. entry
-    else
-      filename = match[1] .. "/" .. entry
-    end
-    
-    filename = uurl.rm_dot_segs:match(filename)
-    filename = uurl.esc_path:match(filename)
-    table.insert(res,string.format("=> %s\t%s",entry,entry))
+    table.insert(res,string.format("=> %s\t%s",uurl.esc_path:match(entry),entry))
   end
   
   table.insert(res,"")
