@@ -133,6 +133,11 @@ handlers =
 {
 
   {
+    path   = '^/sample/(.*)',
+    module = "sample",
+  },
+  
+  {
     path   = '^/bible/(.*)',
     module = "bible",
     books  = "thebooks",
