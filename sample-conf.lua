@@ -123,8 +123,7 @@ cmodules = "/var/gemini/modules/?.so"
 -- only required configuration options per handler are the 'path' field and
 -- the 'module' field, which defines the codebase for the handler.  The
 -- path fields are checked in the order as they appear in this list, and the
--- first one wins.  This makes sure we get a consistent method of dispatch,
--- given that Lua hash tables are random in order.
+-- first one wins.
 -- ************************************************************************
 
 handlers =
