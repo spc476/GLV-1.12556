@@ -48,24 +48,10 @@ network =
 -- syslog() definition block, required
 -- ************************************************************************
 
-log =
+syslog =
 {
   ident    = 'gemini', -- ID of server
   facility = 'daemon', -- syslog facility to log under
-}
-
--- ************************************************************************
--- File filter definition block, optional
---
--- Lua patterns matched against file segments (the stuff between '/' in the
--- path) and if matched, said file isn't served up or listed.  If not given,
--- then any file found under the serving area will be listed.
--- ************************************************************************
-
-no_access =
-{
-  "^%.",  -- no to any dot files
-  "%~$",  -- no to any backup files
 }
 
 -- ************************************************************************
@@ -113,6 +99,48 @@ redirect =
 --[[
 modules  = "/var/gemini/modules/?.lua"
 cmodules = "/var/gemini/modules/?.so"
+--]]
+
+-- ************************************************************************
+-- Authorization
+--
+-- Apply authorization to various paths.  The path patterns are applied 
+-- in order, and first match wins.
+-- ************************************************************************
+
+--[[
+authorization =
+{
+  {
+    -- -----------------------------------------------------------------
+    -- If the pattern matches the query path, apply the authrentication
+    -- -----------------------------------------------------------------
+    
+    path   = "'^/private/",
+    
+    -- ---------------------------------------------------------
+    -- The return status if the check fails.  The values are:
+    --
+    -- 60 - Client certificate required
+    -- 61 - Transient client certificate required
+    -- 62 - Authorized client certificate required
+    --
+    -- 60 is the default value if not specified
+    -- ---------------------------------------------------------
+    
+    status = 62,
+    
+    -- ------------------------------------------------------------------
+    -- Function to check the certificate.  It's given the issuer
+    -- information, the subject information and the broken down request.
+    -- ------------------------------------------------------------------
+    
+    check  = function(issuer,subject,location)
+      return location.query
+         and isser.CN == "Conman Laboratories CA"
+         and subject.CN
+    end,
+  },
 --]]
 
 -- ************************************************************************
@@ -192,9 +220,20 @@ handlers =
     path      = ".*",
     module    = "filesystem",
     directory = "/var/gemini",
+    index     = "index.gemini", -- optional, default value
+    
+    -- -----------------------------------------------------------------
+    -- Optional, filter out filenames with the following patterns.  If
+    -- not given, then by default, filter out files starting with a '.'
+    -- -----------------------------------------------------------------
+    
+    no_access =
+    {
+      "^%.",  -- no to any dot files
+      "%~$",  -- no to any backup files
+    },
   },
 }
---]]
 
 -- ************************************************************************
 -- CGI definition block, optional
