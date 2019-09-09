@@ -171,6 +171,12 @@ end
 
 return function(auth,program,location)
   local conf = require "CONF".cgi
+  
+  if not conf then
+    syslog('error',"CGI script called, but CGI not configured!")
+    return 40,"Temporary Error",""
+  end
+  
   local pipe = fsys.pipe()
   if not pipe then
     return 40,"Temporary Error",""
