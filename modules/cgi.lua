@@ -249,7 +249,7 @@ return function(auth,program,location)
     -- searching for dir in location.path, start just past the leading period.
     -- -----------------------------------------------------------------------
     
-    local _,e      = location.path:find(program:sub(2,-1),1,true)
+    local _,e      = location.path:find(fsys.basename(program),1,true)
     local pathinfo = e and location.path:sub(e+1,-1) or location.path
     
     if pathinfo ~= "" then
