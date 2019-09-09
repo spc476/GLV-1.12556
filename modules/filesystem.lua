@@ -200,7 +200,7 @@ function handler(conf,auth,loc,match)
     
     filename = uurl.rm_dot_segs:match(filename)
     filename = uurl.esc_path:match(filename)
-    table.insert(res,string.format("=> %s\t%s",filename,entry))
+    table.insert(res,string.format("=> %s\t%s",entry,entry))
   end
   
   table.insert(res,"")
