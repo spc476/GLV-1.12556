@@ -39,7 +39,7 @@ local text =
   [[Nunc pharetra sem nec velit tempus, sed malesuada felis accumsan. Vestibulum egestas ex nisl, sit amet rhoncus mauris laoreet at. Ut neque lorem, tempus et dictum non, laoreet ac mauris. Maecenas consectetur blandit neque eget maximus. Duis tincidunt elementum lorem, at varius nisl dapibus vel. In blandit ipsum sed molestie commodo. Quisque aliquet nunc eget pretium viverra. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Morbi ligula nisi, sollicitudin tincidunt efficitur nec, lobortis eu diam. Vestibulum convallis erat velit, semper semper augue sodales in.]],
 }
 
-function handler(_,_,match)
+function handler(_,_,_,match)
   local width = tonumber(match[2]) or 77
   local res   = {}
   

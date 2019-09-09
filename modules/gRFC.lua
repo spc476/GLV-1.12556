@@ -34,7 +34,6 @@ local os       = require "os"
 local string   = require "string"
 local table    = require "table"
 
-local CONF = {}
 _ENV = {}
 
 -- ************************************************************************
@@ -83,14 +82,7 @@ end
 
 -- ************************************************************************
 
-function init(conf)
-  CONF = conf
-  return true
-end
-
--- ************************************************************************
-
-function handler(_,_,match)
+function handler(conf,_,_,match)
   if match[1] == "" then
     local reply = {}
     
@@ -98,7 +90,7 @@ function handler(_,_,match)
     table.insert(reply,"---------------------------")
     table.insert(reply,"")
     
-    for file in fsys.gexpand(CONF.dir .. "/[0-9][0-9][0-9][0-9]") do
+    for file in fsys.gexpand(conf.directory .. "/[0-9][0-9][0-9][0-9]") do
       local f       = io.open(file,"r")
       local headers = parse_headers:match(f:read("*a"))
       f:close()
@@ -108,8 +100,8 @@ function handler(_,_,match)
       
       table.insert(
         reply,
-        string.format([[=> %s/%s %s %s %-8s %s]],
-                CONF.path, name,
+        string.format([[=> %s %s %s %-8s %s]],
+                name,
                 name,
                 when,
                 headers['Status'],
@@ -125,7 +117,7 @@ function handler(_,_,match)
     return 20,"text/gemini",table.concat(reply,"\r\n") .. "\r\n"
     
   else
-    local f = io.open(CONF.dir .. "/" .. match[1],"r")
+    local f = io.open(conf.directory .. "/" .. match[1],"r")
     if not f then
       return 51,"Not found",""
     end

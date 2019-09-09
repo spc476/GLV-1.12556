@@ -32,7 +32,7 @@ _ENV = {}
 
 -- ************************************************************************
 
-function handler(_,loc,match)
+function handler(_,_,loc,match)
   if match[2] == "" then
     return 20,"text/gemini","\r\n"
         .. "I'm thinking of a number between 1 and 100.  Click the\r\n"

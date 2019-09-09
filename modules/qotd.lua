@@ -26,21 +26,14 @@ local io     = require "io"
 local string = require "string"
 local table  = require "table"
 
-local CONF
-local QUOTES
-local INDEX
-local NEXT
-local MAX
-
 _ENV = {}
 
 -- ************************************************************************
 
 function init(conf)
-  CONF   = conf
-  QUOTES = io.open(conf.quotes,"r")
+  conf.QUOTES = io.open(conf.quotes,"r")
   
-  if not QUOTES then
+  if not conf.QUOTES then
     return false,"No quotes file"
   end
   
@@ -49,50 +42,50 @@ function init(conf)
     return false,"No index file"
   end
   
-  INDEX    = {}
-  NEXT,MAX = string.unpack("<I4I4",f:read(8))
-  NEXT     = NEXT + 1 -- adjust for 0 based index
+  conf.INDEX         = {}
+  conf.NEXT,conf.MAX = string.unpack("<I4I4",f:read(8))
+  conf.NEXT          = conf.NEXT + 1 -- adjust for 0 based index
   
-  for _ = 1 , MAX do
+  for _ = 1 , conf.MAX do
     local s = f:read(4)
     local i = string.unpack("<I4",s)
-    table.insert(INDEX,i)
+    table.insert(conf.INDEX,i)
   end
   
-  table.insert(INDEX,f:seek('cur'))
+  table.insert(conf.INDEX,f:seek('cur'))
   f:close()
   
   local state = io.open(conf.state,"r")
   if state then
-    NEXT = state:read("*n")
+    conf.NEXT = state:read("*n")
     state:close()
   end
   
-  QUOTES:seek('set',INDEX[NEXT])
+  conf.QUOTES:seek('set',conf.INDEX[conf.NEXT])
   return true
 end
 
 -- ************************************************************************
 
-function fini()
-  QUOTES:close()
-  local f = io.open(CONF.state,"w")
+function fini(conf)
+  conf.QUOTES:close()
+  local f = io.open(conf.state,"w")
   if f then
-    f:write(NEXT,"\n")
+    f:write(conf.NEXT,"\n")
     f:close()
   end
 end
 
 -- ************************************************************************
 
-function handler()
-  local amount = INDEX[NEXT + 1] - INDEX[NEXT]
-  local quote  = QUOTES:read(amount)
+function handler(conf)
+  local amount = conf.INDEX[conf.NEXT + 1] - conf.INDEX[conf.NEXT]
+  local quote  = conf.QUOTES:read(amount)
   
-  NEXT = NEXT + 1
-  if NEXT > MAX then
-    NEXT = 1
-    QUOTES:seek('set',0)
+  conf.NEXT = conf.NEXT + 1
+  if conf.NEXT > conf.MAX then
+    conf.NEXT = 1
+    conf.QUOTES:seek('set',0)
   end
   
   return 20,"text/plain",quote

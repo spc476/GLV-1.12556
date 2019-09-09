@@ -45,9 +45,10 @@ function init(conf)
 end
 
 -- ************************************************************************
--- Usage:	status,mime,data = sample.handler(conf,loc,match)
+-- Usage:	status,mime,data = sample.handler(conf,auth,loc,match)
 -- Desc:	Handle the request
 -- Input:	conf (table) configuration block from configuration file
+--		auth (table) authentication information
 -- 		loc (table) Broken down URL from the request
 --		match (table) matched data from the path pattern
 -- Return:	status (integer) Gemini status code
@@ -55,10 +56,12 @@ end
 --		data (string) content if any
 -- ************************************************************************
 
-function handler(conf,loc,match)
+function handler(conf,auth,loc,match)
   return 20,'text/plain',string.format([[
 conf.path=%q
 conf.module=%q
+auth.issuer=%q
+auth.subject=%q
 loc.host=%s
 loc.port=%d
 loc.path=%q
@@ -67,13 +70,14 @@ match[1]=%q
 ]],
 	conf.path,
 	conf.module,
+	auth.issuer  or "",
+	auth.subject or "",
 	loc.host,
 	loc.port,
 	loc.path,
 	loc.query or "",
 	match[1]  or ""
   )
-  
 end
 
 -- ************************************************************************

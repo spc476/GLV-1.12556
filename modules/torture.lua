@@ -31,8 +31,7 @@ local table  = require "table"
 
 local tonumber = tonumber
 
-local CONF = {}
-_ENV       = {}
+_ENV = {}
 
 -- ************************************************************************
 
@@ -82,16 +81,9 @@ end
 
 -- ************************************************************************
 
-function init(conf)
-  CONF = conf
-  return true
-end
-
--- ************************************************************************
-
-function handler(_,_,match)
+function handler(conf,_,_,match)
   local function readfile(name)
-    local f = io.open(CONF.dir .. "/" .. name,"r")
+    local f = io.open(conf.directory .. "/" .. name,"r")
     if f then
       local d = f:read("*a")
       local headers,pos = parse_headers:match(d)
@@ -110,7 +102,7 @@ function handler(_,_,match)
     table.insert(body,"List of tests")
     table.insert(body,"")
     
-    for file in fsys.gexpand(CONF.dir .. "/[0-9][0-9][0-9][0-9]") do
+    for file in fsys.gexpand(conf.directory .. "/[0-9][0-9][0-9][0-9]") do
       local f   = io.open(file,"r")
       local hdr = parse_headers:match(f:read("*a"))
       f:close()

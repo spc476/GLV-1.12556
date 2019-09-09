@@ -134,7 +134,7 @@ end
 
 -- ************************************************************************
 
-function handler(_,loc,match)
+function handler(_,_,loc,match)
 
   local function redirect_here(u,book)
     local selector = { book.book }
