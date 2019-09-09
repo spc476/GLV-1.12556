@@ -35,25 +35,6 @@ local url       = require "org.conman.parsers.url"
 local lpeg      = require "lpeg"
 
 local CONF = {}
-local MSG  =
-{
-  [40] = "Temporary Error",
-  [41] = "Server Unavailable",
-  [42] = "CGI Error",
-  [43] = "Proxy Error",
-  [44] = "Slow Down",
-  [50] = "Permanent Error",
-  [51] = "Not Found",
-  [52] = "Gone",
-  [53] = "Proxy Request Refused",
-  [59] = "Bad Request",
-  [60] = "Client Certificate Required",
-  [61] = "Transient Certificate Required",
-  [62] = "Authorized Certicate Required",
-  [63] = "Certificate Not Accepted",
-  [64] = "Future Certificate Rejected",
-  [65] = "Expired Certificate Rejected",
-}
 
 -- ************************************************************************
 
@@ -143,13 +124,16 @@ do
       loadmod(info)
     end
   end
+  
+  package.loaded.CONF = CONF
 end
 
 local uurl = require "url-util" -- XXX hack
 local cgi  = require "cgi"      -- XXX hack
+local MSG  = require "MSG"      -- XXX hack
 
 magic:flags('mime')
-syslog.open(CONF.log.ident,CONF.log.facility)
+syslog.open(CONF.syslog.ident,CONF.syslog.facility)
 
 CONF._internal      = {}
 CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
@@ -164,21 +148,6 @@ local redirect_subst do
                    end
   local char     = replace + lpeg.P(1)
   redirect_subst = lpeg.Cs(char^1)
-end
-
--- ************************************************************************
-
-local function descend_path(path)
-  local function iter(state,var)
-    local n = state()
-    if n then
-      assert(n ~= "..")
-      assert(n ~= ".")
-      return var .. "/" .. n,n
-    end
-  end
-  
-  return iter,path:gmatch("[^/]+"),"."
 end
 
 -- ************************************************************************
@@ -199,91 +168,6 @@ end
 
 -- ************************************************************************
 
-local function authorized(tag,ios,checkf,loc)
-  if not ios.__ctx:peer_cert_provided() then
-    local ok,auth,status = pcall(checkf)
-    if not ok then
-      syslog('error',"%s: %s",tag,auth)
-      return false,40
-    else
-      return false,status or 60
-    end
-  end
-  
-  local I         = ios.__ctx:peer_cert_issuer()
-  local S         = ios.__ctx:peer_cert_subject()
-  local issuer    = cert_parse:match(I)
-  local subject   = cert_parse:match(S)
-  local notbefore = ios.__ctx:peer_cert_notbefore()
-  local notafter  = ios.__ctx:peer_cert_notafter()
-  local now       = os.time()
-  
-  if now < notbefore then
-    return false,64,S,I
-  end
-  
-  if now > notafter then
-    return false,65,S,I
-  end
-  
-  local ok,auth = pcall(checkf,issuer,subject,loc)
-  if not ok then
-    syslog('error',"%s: %s",tag,auth)
-    return false,40
-  end
-  
-  return auth,63,S,I
-end
-
--- ************************************************************************
-
-local function authorized_dir(ios,dir,loc)
-  local pfname   = dir .. "/.private"
-  local okay,err = fsys.access(pfname,'r')
-  
-  -- --------------------------------------------------------------
-  -- If .private doesn't exist, we're okay to go.  Any other error
-  -- and we deny access just to be safe
-  -- --------------------------------------------------------------
-  
-  if not okay and err == errno.ENOENT then return true end
-  if not okay then
-    syslog('error',"%s: %s",pfname,errno[err])
-    return false,60
-  end
-  
-  local check,err1 = loadfile(pfname,"t",{})
-  if not check then
-    syslog('error',"%s: %s",pfname,err1)
-    return false,40
-  end
-  
-  return authorized(pfname,ios,check,loc)
-end
-
--- ************************************************************************
-
-local function copy_file(ios,name)
-  local f = io.open(name,"rb")
-  local s = 0
-  repeat
-    local data = f:read(8192)
-    if data then
-      local okay,err = ios:write(data)
-      if not okay then
-        syslog('error',"ios:write() = %s",err)
-        f:close()
-        return s
-      end
-      s = s + #data
-    end
-  until not data
-  f:close()
-  return s
-end
-
--- ************************************************************************
-
 local function reply(ios,...)
   local bytes = 0
   
@@ -298,7 +182,7 @@ end
 
 -- ************************************************************************
 
-local function log(ios,status,request,bytes,subject,issuer)
+local function log(ios,status,request,bytes,auth)
   syslog(
         'info',
         "remote=%s status=%d request=%q bytes=%d subject=%q issuer=%q",
@@ -306,8 +190,8 @@ local function log(ios,status,request,bytes,subject,issuer)
         status,
         request,
         bytes,
-        subject or "",
-        issuer  or ""
+        auth and auth.subject or "",
+        auth and auth.issuer  or ""
   )
 end
 
@@ -382,6 +266,62 @@ local function main(ios)
     end
   end
   
+  -- --------------------------------------------------------------
+  -- Do our authorization checks.  This way, we can get consistent
+  -- authorization checks across handlers
+  -- --------------------------------------------------------------
+  
+  local auth = { _remote = ios.__remote }
+  
+  for _,rule in ipairs(CONF.authorization) do
+    if loc.path:match(rule.path) then
+      if not ios.__ctx:peer_cert_provided() then
+        local ret = rule.status or 60
+        log(ios,ret,request,reply(ios,ret,"\t",MSG[ret],"\r\n"))
+        ios:close()
+        return
+      end
+      
+      auth._provided = true
+      auth._ctx      = ios.__ctx
+      auth.I         = ios.__ctx:peer_cert_issuer()
+      auth.S         = ios.__ctx:peer_cert_subject()
+      auth.issuer    = cert_parse:match(auth.I)
+      auth.subject   = cert_parse:match(auth.S)
+      auth.notbefore = ios.__ctx:peer_cert_notbefore()
+      auth.notafter  = ios.__ctx:peer_cert_notafter()
+      auth.now       = os.time()
+      
+      if now < auth.notbefore then
+        log(ios,64,request,reply(ios,"64\t",MSG[64],"\r\n"),auth)
+        ios:close()
+        return
+      end
+      
+      if now > auth.notafter then
+        log(ios,65,request,reply(ios,"65\t",MSG[65],"\r\n"),auth)
+        ios:close()
+        return
+      end
+      
+      local okay,auth = pcall(rule.check,auth.issuer,auth.subject,loc)
+      if not ok then
+        syslog('error',"%s: %s",rule.path,auth)
+        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),auth)
+        ios:close()
+        return
+      end
+      
+      if not auth then
+        log(ios,63,request,reply(ios,"63\t",MSG[63],"\r\n"),auth)
+        ios:close()
+        return
+      end
+      
+      break
+    end
+  end
+  
   -- -------------------------------------
   -- Run through our installed handlers
   -- -------------------------------------
@@ -389,212 +329,17 @@ local function main(ios)
   for _,info in ipairs(CONF.handlers) do
     local match = table.pack(loc.path:match(info.path))
     if #match > 0 then
-      --local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
-      local okay,status,mime,data = pcall(info.code.handler,info,loc,match)
+      local okay,status,mime,data = pcall(info.code.handler,info,auth,loc,match)
       if not okay then
-        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"))
+        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),auth)
         syslog('error',"request=%s error=%s",request,status)
       else
-        log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data))
+        log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data),auth)
       end
       ios:close()
       return
     end
   end
-  
-  -- -------------------------------------
-  -- Regular file processing starts now
-  -- -------------------------------------
-  
-  local subject
-  local issuer
-  
-  -- =====================================================================
-  
-  local function write_file(file)
-    if fsys.access(file,"x") then
-      local status,mime,data = cgi(ios.__ctx,ios.__remote,file,loc,CONF.cgi)
-      log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data),subject,issuer)
-      return true
-    end
-    
-    if not fsys.access(file,"r") then
-      return false
-    end
-    
-    if file:match "%.gemini$" then
-      local bytes = reply(ios,"20\ttext/gemini\r\n")
-                  + copy_file(ios,file)
-      log(ios,20,request,bytes,subject,issuer)
-    else
-      local bytes = reply(ios,"20\t",magic(file),"\r\n")
-                  + copy_file(ios,file)
-      log(ios,20,request,bytes,subject,issuer)
-    end
-    
-    return true
-  end
-  
-  -- =====================================================================
-  
-  for dir,segment in descend_path(loc.path) do
-    -- ----------------------------------------------------
-    -- Skip the following files that match these patterns
-    -- ----------------------------------------------------
-    
-    for _,pattern in ipairs(CONF.no_access) do
-      if segment:match(pattern) then
-        log(ios,51,request,reply(ios,"51\t",MSG[51],"\r\n"),subject,issuer)
-        ios:close()
-        return
-      end
-    end
-    
-    local info = fsys.stat(dir)
-    
-    if not info then
-      log(ios,51,request,reply(ios,"51\t",MSG[51],"\r\n"),subject,issuer)
-      ios:close()
-      return
-    end
-    
-    if info.mode.type == 'dir' then
-    
-      -- -------------------------------------------
-      -- Do we have an issue with Unix permissions?
-      -- -------------------------------------------
-      
-      if not fsys.access(dir,"x") then
-        syslog('error',"access(%q) failed",dir)
-        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),subject,issuer)
-        ios:close()
-        return
-      end
-      
-      -- ---------------------------------------------------
-      -- Does this directory have certificate requirements?
-      -- ---------------------------------------------------
-      
-      local auth,status,s,i = authorized_dir(ios,dir,loc)
-      if not auth then
-        log(ios,status,request,reply(ios,string.format("%d\t%s\r\n",status,MSG[status])),s,i)
-        ios:close()
-        return
-      end
-      
-      if s and not subject then subject = s end
-      if i and not issuer  then issuer  = i end
-      
-    elseif info.mode.type == 'file' then
-      if not write_file(dir) then
-        syslog('error',"type(%q) = %s",dir,info.mode.type)
-        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),subject,issuer)
-        ios:close()
-      end
-      ios:close()
-      return
-      
-    else
-      log(ios,51,request,reply(ios,"51\t",MSG[51],"\r\n"),subject,issuer)
-      ios:close()
-      return
-    end
-  end
-  
-  -- ---------------------------------------------------------------------
-  -- We're at the end of the request path, and we haven't hit a file yet.
-  -- So serve up an index.  If "index.gemini" exists, serve that up,
-  -- otherwise, make one up on the fly.
-  -- ---------------------------------------------------------------------
-  
-  local final  = "."   .. loc.path
-  
-  if write_file(final .. "/index.gemini") then
-    ios:close()
-    return
-  end
-  
-  local bytes = reply(ios,
-        "20\ttext/gemini\r\n",
-        "Index of ",loc.path,"\r\n",
-        "---------------------------\r\n",
-        "\r\n"
-  )
-  
-  local function access_okay(dir,entry)
-    for _,pattern in ipairs(CONF.no_access) do
-      if entry:match(pattern) then return false end
-    end
-    
-    local fname = dir .. "/" .. entry
-    local info  = fsys.stat(fname)
-    
-    if not info then
-      return false
-    elseif info.mode.type == 'file' then
-      return fsys.access(fname,'r'),'file'
-    elseif info.mode.type == 'dir' then
-      return fsys.access(fname,'x'),'dir'
-    else
-      return false
-    end
-  end
-  
-  local lists =
-  {
-    dir  = {},
-    file = {},
-  }
-  
-  for entry in fsys.dir(final) do
-    local okay,type = access_okay(final,entry)
-    if okay then
-      table.insert(lists[type],entry)
-    end
-  end
-  
-  table.sort(lists.dir)
-  table.sort(lists.file)
-  
-  for _,entry in ipairs(lists.dir) do
-    local filename
-    
-    if loc.path:match "/$" then
-      filename = loc.path .. entry .. "/"
-    else
-      filename = loc.path .. "/" .. entry .. "/"
-    end
-    
-    filename = uurl.rm_dot_segs:match(filename)
-    filename = uurl.esc_path:match(filename)
-    bytes    = bytes + reply(ios,"=> ",filename,"\t",entry,"/\r\n")
-  end
-  
-  if #lists.dir > 0 then
-    bytes = bytes + reply(ios,"\r\n")
-  end
-  
-  for _,entry in ipairs(lists.file) do
-    local filename
-    
-    if loc.path:match "/$" then
-      filename = loc.path .. entry
-    else
-      filename = loc.path .. "/" .. entry
-    end
-    
-    filename = uurl.rm_dot_segs:match(filename)
-    filename = uurl.esc_path:match(filename)
-    bytes    = bytes + reply(ios,"=> ",filename,"\t",entry,"\r\n")
-  end
-  
-  bytes = bytes + reply(ios,
-        "\r\n",
-        "---------------------------\r\n",
-        "GLV-1.12556\r\n"
-  )
-  log(ios,20,request,bytes,subject,issuer)
-  ios:close()
 end
 
 -- ************************************************************************
@@ -610,12 +355,6 @@ end)
 if not okay then
   io.stderr:write(string.format("%s: %s\n",arg[1],err))
   os.exit(exit.OSERR,true)
-end
-
-okay,err = fsys.chdir(CONF.network.host)
-if not okay then
-  io.stderr:write(string.format("%s: %s\n",tostring(CONF.network.host),errno[err]))
-  os.exit(exit.CONFIG,true)
 end
 
 signal.catch('int')
