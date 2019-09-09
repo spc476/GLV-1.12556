@@ -116,10 +116,9 @@ cmodules = "/var/gemini/modules/?.so"
 --]]
 
 -- ************************************************************************
--- Handler extensions, optional
+-- Handlers
 --
--- These represent virtual resources, or virtual CGI scripts.  This is
--- checked after the redirections, but before the file system is handled.
+-- These handle all requests, and are used after all redirections are checked.  
 -- The configuration options are entirely dependant upon the handler---the
 -- only required configuration options per handler are the 'path' field and
 -- the 'module' field, which defines the codebase for the handler.  The
@@ -128,15 +127,25 @@ cmodules = "/var/gemini/modules/?.so"
 -- given that Lua hash tables are random in order.
 -- ************************************************************************
 
---[[
 handlers =
 {
-
+  -- ----------------------
+  -- Sample handler code---optional.  Only here to show the skeleton of
+  -- a handler.  Can be safely removed.
+  -- ----------------------
+  
   {
     path   = '^/sample/(.*)',
     module = "sample",
   },
   
+  -- -------------------------------------------------------------------
+  -- Various handlers you probably don't (or can't) run (due to missing
+  -- files, etc).  These were all made to make various points about
+  -- serving content via Gemini.
+  -- -------------------------------------------------------------------
+  
+  --[[
   {
     path   = '^/bible/(.*)',
     module = "bible",
@@ -173,6 +182,17 @@ handlers =
   {
     path   = '^(/hilo/)(.*)',
     module = "hilo",
+  },
+  --]]
+  
+  -- --------------------------------------
+  -- Handles requests from a directory.
+  -- --------------------------------------
+  
+  {
+    path      = ".*",
+    module    = "filesystem",
+    directory = "/var/gemini",
   },
 }
 --]]
