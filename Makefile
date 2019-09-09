@@ -2,7 +2,7 @@
 .PHONY: luacheck clean
 
 luacheck:
-	luacheck Lua/*.lua
+	luacheck $(shell find . -name '*.lua')
 
 clean:
 	$(RM) $(shell find . -name '*~')
