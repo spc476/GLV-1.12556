@@ -290,21 +290,21 @@ local function main(ios)
       auth.notafter  = ios.__ctx:peer_cert_notafter()
       auth.now       = os.time()
       
-      if now < auth.notbefore then
+      if auth.now < auth.notbefore then
         log(ios,64,request,reply(ios,"64\t",MSG[64],"\r\n"),auth)
         ios:close()
         return
       end
       
-      if now > auth.notafter then
+      if auth.now > auth.notafter then
         log(ios,65,request,reply(ios,"65\t",MSG[65],"\r\n"),auth)
         ios:close()
         return
       end
       
-      local okay,auth = pcall(rule.check,auth.issuer,auth.subject,loc)
-      if not ok then
-        syslog('error',"%s: %s",rule.path,auth)
+      local okay,err = pcall(rule.check,auth.issuer,auth.subject,loc)
+      if not okay then
+        syslog('error',"%s: %s",rule.path,err)
         log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),auth)
         ios:close()
         return
