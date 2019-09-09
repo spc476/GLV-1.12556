@@ -73,9 +73,9 @@ no_access =
 --
 -- Before any handlers or files are checked, requests are filtered through
 -- these redirection blocks.  The temporary block is for temporary
--- redirects, and the permanent block is for permanent redirects.  The keys
--- for these are Lua patterns that are tried against the request, and if a
--- match is found, the value is served up as the location to redirect to.
+-- redirects, and the permanent block is for permanent redirects.  The first
+-- element of each entry is the pattern that is tried against the request,
+-- and if matched, the value is served up as the redirected location.
 --
 -- Pattern captures can be referenced in the value, "$1" will be replaced
 -- with the first such capture, "$2" with the second capture, and so on.
@@ -90,12 +90,12 @@ redirect =
 {
   temporary =
   {
-    ['^/example1/(.*)'] = "/new-location/$1",
+    { '^/example1/(.*)' , "/new-location/$1" } ,
   },
   
   permanent =
   {
-    ['^/example2/(contents)/(.*)' = "gemini://example.net/$1/$2",
+    { '^/example2/(contents)/(.*)' , "gemini://example.net/$1/$2" } ,
   },
   
   gone =

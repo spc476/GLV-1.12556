@@ -351,22 +351,23 @@ local function main(ios)
   -- -------------------------------------------------------------
   -- We handle the various redirections here, the temporary ones,
   -- the permanent ones, and those that are gone gone gone ...
+  -- I'm still unsure of the order I want these in ...
   -- -------------------------------------------------------------
   
-  for pattern,replace in pairs(CONF.redirect.temporary) do
-    local match = table.pack(loc.path:match(pattern))
+  for _,rule in ipairs(CONF.redirect.temporary) do
+    local match = table.pack(loc.path:match(rule[1]))
     if #match > 0 then
-      local new = redirect_subst:match(replace,1,match)
+      local new = redirect_subst:match(rule[2],1,match)
       log(ios,30,request,reply(ios,"30\t",new,"\r\n"))
       ios:close()
       return
     end
   end
   
-  for pattern,replace in pairs(CONF.redirect.permanent) do
-    local match = table.pack(loc.path:match(pattern))
+  for _,rule in ipairs(CONF.redirect.permanent) do
+    local match = table.pack(loc.path:match(rule[1]))
     if #match > 0 then
-      local new = redirect_subst:match(replace,1,match)
+      local new = redirect_subst:match(rule[2],1,match)
       log(ios,31,request,reply(ios,"31\t",new,"\r\n"))
       ios:close()
       return
