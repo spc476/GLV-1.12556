@@ -389,7 +389,8 @@ local function main(ios)
   for _,info in ipairs(CONF.handlers) do
     local match = table.pack(loc.path:match(info.path))
     if #match > 0 then
-      local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
+      --local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
+      local okay,status,mime,data = pcall(info.code.handler,info,loc,match)
       if not okay then
         log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"))
         syslog('error',"request=%s error=%s",request,status)
@@ -624,7 +625,7 @@ nfl.server_eventloop(function() return signal.caught() end)
 
 for _,info in ipairs(CONF.handlers) do
   if info.code and info.code.fini then
-    local ok,status = pcall(info.code.fini)
+    local ok,status = pcall(info.code.fini,info)
     if not ok then
       syslog('error',"%s: %s",info.module,status)
     end

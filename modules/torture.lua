@@ -89,7 +89,7 @@ end
 
 -- ************************************************************************
 
-function handler(_,_,_,match)
+function handler(_,_,match)
   local function readfile(name)
     local f = io.open(CONF.dir .. "/" .. name,"r")
     if f then

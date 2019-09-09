@@ -90,7 +90,7 @@ end
 
 -- ************************************************************************
 
-function handler(_,_,_,match)
+function handler(_,_,match)
   if match[1] == "" then
     local reply = {}
     
