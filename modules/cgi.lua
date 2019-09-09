@@ -128,22 +128,6 @@ end
 
 -- ************************************************************************
 
-local cert_parse do
-  local Cf = lpeg.Cf
-  local Cg = lpeg.Cg
-  local Ct = lpeg.Ct
-  local C  = lpeg.C
-  local P  = lpeg.P
-  local R  = lpeg.R
-  
-  local name   = R("AZ","az")^1
-  local value  = R(" .","0\255")^1
-  local record = Cg(P"/" * C(name) * P"=" * C(value))
-  cert_parse   = Cf(Ct"" * record^1,function(acc,n,v) acc[n] = v return acc end)
-end
-
--- ************************************************************************
-
 local function fdtoios(fd)
   local newfd   = ios()
   newfd.__fd    = fd
@@ -185,7 +169,8 @@ end
 
 -- ************************************************************************
 
-return function(ssl,remote,program,location,conf)
+return function(auth,program,location)
+  local conf = require "CONF".cgi
   local pipe = fsys.pipe()
   if not pipe then
     return 40,"Temporary Error",""
@@ -243,8 +228,8 @@ return function(ssl,remote,program,location,conf)
     {
       GATEWAY_INTERFACE = "CGI/1.1",
       QUERY_STRING      = location.query or "",
-      REMOTE_ADDR       = remote.addr,
-      REMOTE_HOST       = remote.addr,
+      REMOTE_ADDR       = auth._remote,
+      REMOTE_HOST       = auth._remote,
       REQUEST_METHOD    = "",
       SCRIPT_NAME       = program:sub(2,-1),
       SERVER_NAME       = location.host,
@@ -303,44 +288,37 @@ return function(ssl,remote,program,location,conf)
         end
       end
       
-      if not ssl:peer_cert_provided() then return end
+      if not auth._provided then return end
       
-      local notbefore = ssl:peer_cert_notbefore()
-      local notafter  = ssl:peer_cert_notafter()
-      local now       = os.time()
-      local remain    = tostring(math.floor(os.difftime(notafter,now) / 86400))
-      local I         = ssl:peer_cert_issuer()
-      local S         = ssl:peer_cert_subject()
-      local issuer    = cert_parse:match(I)
-      local subject   = cert_parse:match(S)
+      local remain = tostring(math.floor(os.difftime(auth.notafter,auth.now) / 86400))
       
       if not apache then
-        env.TLS_CIPHER            = ssl:conn_cipher()
-        env.TLS_VERSION           = ssl:conn_version()
-        env.TLS_CLIENT_HASH       = ssl:peer_cert_hash()
-        env.TLS_CLIENT_ISSUER     = I
-        env.TLS_CLIENT_SUBJECT    = S
-        env.TLS_CLIENT_NOT_BEFORE = os.date("%Y-%m-%dT%H:%M:%SZ",notbefore)
-        env.TLS_CLIENT_NOT_AFTER  = os.date("%Y-%m-%dT%H:%M:%SZ",notafter)
+        env.TLS_CIPHER            = auth._ctx:conn_cipher()
+        env.TLS_VERSION           = auth._ctx:conn_version()
+        env.TLS_CLIENT_HASH       = auth._ctx:peer_cert_hash()
+        env.TLS_CLIENT_ISSUER     = auth.I
+        env.TLS_CLIENT_SUBJECT    = auth.S
+        env.TLS_CLIENT_NOT_BEFORE = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notbefore)
+        env.TLS_CLIENT_NOT_AFTER  = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notafter)
         env.TLS_CLIENT_REMAIN     = remain
         
-        breakdown("TLS_CLIENT_ISSUER_", issuer)
-        breakdown("TLS_CLIENT_SUBJECT_",subject)
+        breakdown("TLS_CLIENT_ISSUER_", auth.issuer)
+        breakdown("TLS_CLIENT_SUBJECT_",auth.subject)
         
         env.AUTH_TYPE   = 'Certificate'
         env.REMOTE_USER = env.TLS_CLIENT_SUBJECT_CN
       else
-        env.SSL_CIPHER          = ssl:conn_cipher()
-        env.SSL_PROTOCOL        = ssl:conn_version()
-        env.SSL_CLIENT_I_DN     = I
-        env.SSL_CLIENT_S_DN     = S
-        env.SSL_CLIENT_V_START  = os.date("%b %d %H:%M:%S %Y GMT",notbefore)
-        env.SSL_CLIENT_V_END    = os.date("%b %d %H:%M:%S %Y GMT",notafter)
+        env.SSL_CIPHER          = auth._ctx:conn_cipher()
+        env.SSL_PROTOCOL        = auth._ctx:conn_version()
+        env.SSL_CLIENT_I_DN     = auth.I
+        env.SSL_CLIENT_S_DN     = auth.S
+        env.SSL_CLIENT_V_START  = os.date("%b %d %H:%M:%S %Y GMT",auth.notbefore)
+        env.SSL_CLIENT_V_END    = os.date("%b %d %H:%M:%S %Y GMT",auth.notafter)
         env.SSL_CLIENT_V_REMAIN = remain
         env.SSL_TLS_SNI         = env.SERVER_NAME
         
-        breakdown("SSL_CLIENT_I_DN_",issuer)
-        breakdown("SSL_CLIENT_S_DN_",subject)
+        breakdown("SSL_CLIENT_I_DN_",auth.issuer)
+        breakdown("SSL_CLIENT_S_DN_",auth.subject)
         
         env.AUTH_TYPE   = 'Certificate'
         env.REMOTE_USER = env.SSL_CLIENT_S_DN_CN
