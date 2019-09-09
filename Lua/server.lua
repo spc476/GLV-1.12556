@@ -139,7 +139,7 @@ do
       info.code = mod
     end
     
-    for _,info in pairs(CONF.handlers) do
+    for _,info in ipairs(CONF.handlers) do
       loadmod(info)
     end
   end
@@ -385,8 +385,8 @@ local function main(ios)
   -- Run through our installed handlers
   -- -------------------------------------
   
-  for pattern,info in pairs(CONF.handlers) do
-    local match = table.pack(loc.path:match(pattern))
+  for _,info in ipairs(CONF.handlers) do
+    local match = table.pack(loc.path:match(info.path))
     if #match > 0 then
       local okay,status,mime,data = pcall(info.code.handler,ios,request,loc,match)
       if not okay then
@@ -621,7 +621,7 @@ signal.catch('term')
 syslog('info',"entering service @%s",fsys.getcwd())
 nfl.server_eventloop(function() return signal.caught() end)
 
-for _,info in pairs(CONF.handlers) do
+for _,info in ipairs(CONF.handlers) do
   if info.code and info.code.fini then
     local ok,status = pcall(info.code.fini)
     if not ok then

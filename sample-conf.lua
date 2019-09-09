@@ -121,41 +121,54 @@ cmodules = "/var/gemini/modules/?.so"
 -- These represent virtual resources, or virtual CGI scripts.  This is
 -- checked after the redirections, but before the file system is handled.
 -- The configuration options are entirely dependant upon the handler---the
--- only required configuration option per handler is the 'module' field,
--- which defines the codebase for the handler.
+-- only required configuration options per handler are the 'path' field and
+-- the 'module' field, which defines the codebase for the handler.  The
+-- path fields are checked in the order as they appear in this list, and the
+-- first one wins.  This makes sure we get a consistent method of dispatch,
+-- given that Lua hash tables are random in order.
 -- ************************************************************************
 
 --[[
 handlers =
 {
 
-  ['^/bible/(.*)'] =
   {
+    path   = '^/bible/(.*)',
     module = "bible",
     books  = "thebooks",
     verses = "theverses",
   },
   
-  ['^/qotd$'] =
   {
+    path   = '^/qotd$',
     module = "qotd",
     quotes = "quotes.txt",
     index  = "quotes.index",
     state  = "quotes.state",
   },
   
-  ['^/gRFC/(.*)'] =
   {
+    path   = '^/gRFC/(.*)',
     module = "gRFC",
     dir    = "gRFC",
     path   = "/gRFC",
   },
   
-  ['^/test/torture/(.*)'] =
   {
+    path   = '^/test/torture/(.*)',
     module = "torture",
     dir    = "torture",
-  }
+  },
+  
+  {
+    path   = '^/test/wrap(%;?(%d*))',
+    module = "wrap",
+  },
+  
+  {
+    path   = '^(/hilo/)(.*)',
+    module = "hilo",
+  },
 }
 --]]
 
