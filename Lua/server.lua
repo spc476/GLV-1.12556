@@ -59,10 +59,6 @@ do
     package.cpath = CONF.cmodules .. ";" .. package.cpath
   end
   
-  if not CONF.no_access then
-    CONF.no_access = {}
-  end
-  
   -- --------------------------------------------
   -- Make sure the redirect tables always exist.
   -- --------------------------------------------
