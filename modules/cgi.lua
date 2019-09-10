@@ -228,7 +228,14 @@ return function(auth,program,location)
       pipe.read:close()
     end
     
-    local prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
+    local prog
+
+    if program:match "^/" then
+      prog = uurl.rm_dot_segs:match(program)
+    else
+      prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
+    end
+    
     local args = parse_cgi_args:match(location.query or "") or {}
     local env  =
     {
@@ -362,7 +369,6 @@ return function(auth,program,location)
         process.exit(exit.CONFIG)
       end
     end
-    
     process.exec(prog,args,env)
     process.exit(exit.OSERR)
   end
