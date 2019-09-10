@@ -331,7 +331,7 @@ local function main(ios)
   -- -------------------------------------
   -- Run through our installed handlers
   -- -------------------------------------
-  
+
   for _,info in ipairs(CONF.handlers) do
     local match = table.pack(loc.path:match(info.path))
     if #match > 0 then

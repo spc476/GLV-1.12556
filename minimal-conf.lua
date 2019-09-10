@@ -44,7 +44,9 @@ modules = "modules/?.lua" -- change as needed
 
 handlers =
 {
-  path      = ".*",
-  module    = "filesystem",
-  directory = "share", -- change as needed
+  {
+    path      = ".*",
+    module    = "filesystem",
+    directory = "share", -- change as needed
+  },
 }
