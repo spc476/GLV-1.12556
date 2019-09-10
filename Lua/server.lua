@@ -346,6 +346,10 @@ local function main(ios)
       return
     end
   end
+  
+  syslog('error',"no handlers for %q found---possible configuration error?",request)
+  log(ios,41,request,reply(ios,"41\t",MSG[41],"\r\n"),auth)
+  ios:close()
 end
 
 -- ************************************************************************
