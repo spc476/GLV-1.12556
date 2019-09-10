@@ -40,7 +40,7 @@ local text =
 }
 
 function handler(_,_,_,match)
-  local width = tonumber(match[2]) or 77
+  local width = tonumber(match[1]) or 77
   local res   = {}
   
   if width < 1 then width = 1 end
