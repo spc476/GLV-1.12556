@@ -19,7 +19,7 @@
 --    Comments, questions and criticisms can be sent to: sean@conman.org
 --
 -- ************************************************************************
--- luacheck: globals certificate network log redirect no_access
+-- luacheck: globals certificate network syslog redirect
 -- luacheck: globals cgi modules cmodules handlers
 -- luacheck: ignore 611
 
@@ -104,7 +104,7 @@ cmodules = "/var/gemini/modules/?.so"
 -- ************************************************************************
 -- Authorization
 --
--- Apply authorization to various paths.  The path patterns are applied 
+-- Apply authorization to various paths.  The path patterns are applied
 -- in order, and first match wins.
 -- ************************************************************************
 
@@ -146,7 +146,7 @@ authorization =
 -- ************************************************************************
 -- Handlers
 --
--- These handle all requests, and are used after all redirections are checked.  
+-- These handle all requests, and are used after all redirections are checked.
 -- The configuration options are entirely dependant upon the handler---the
 -- only required configuration options per handler are the 'path' field and
 -- the 'module' field, which defines the codebase for the handler.  The
