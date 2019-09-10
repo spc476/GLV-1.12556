@@ -63,6 +63,14 @@ do
     CONF.network.port = 1965
   end
   
+  if not CONF.syslog then
+    CONF.syslog = { ident = "gemini" , facility = "daemon" }
+  end
+  
+  if not CONF.authorization then
+    CONF.authorization = {}
+  end
+  
   -- --------------------------------------------
   -- Make sure the redirect tables always exist.
   -- --------------------------------------------
