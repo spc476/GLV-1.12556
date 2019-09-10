@@ -65,6 +65,9 @@ do
   
   if not CONF.syslog then
     CONF.syslog = { ident = "gemini" , facility = "daemon" }
+  else
+    CONF.syslog.ident    = CONF.syslog.ident    or "gemini"
+    CONF.syslog.facility = CONF.syslog.facility or "daemon"
   end
   
   if not CONF.authorization then
