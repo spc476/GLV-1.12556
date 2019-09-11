@@ -51,6 +51,20 @@ do
   
   conf()
   
+  if not CONF.certificate
+  or not CONF.certificate.cert
+  or not CONF.certificate.key then
+    syslog('critical',"%s: missing or bad certificate block",arg[1])
+    os.exit(exit.CONFIG,true)
+  end
+  
+  if not CONF.network
+  or not CONF.network.host
+  or not CONF.network.addr then
+    syslog('critical',"%s: missing or bad network block",arg[1])
+    os.exit(exit.CONFIG,true)
+  end
+  
   if CONF.modules then
     package.path  = CONF.modules  .. ";" .. package.path
   end
