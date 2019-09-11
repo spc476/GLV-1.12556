@@ -134,18 +134,17 @@ do
       loadmod(info)
     end
   end
+
+  magic:flags('mime')
+  syslog.open(CONF.syslog.ident,CONF.syslog.facility)
   
+  CONF._internal      = {}
+  CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
   package.loaded.CONF = CONF
 end
 
 local uurl = require "url-util" -- XXX hack
 local MSG  = require "MSG"      -- XXX hack
-
-magic:flags('mime')
-syslog.open(CONF.syslog.ident,CONF.syslog.facility)
-
-CONF._internal      = {}
-CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
 
 -- ************************************************************************
 
