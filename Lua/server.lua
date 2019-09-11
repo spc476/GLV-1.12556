@@ -236,13 +236,17 @@ local function main(ios)
     return
   end
   
-  if not loc.host then
+  if not loc.scheme then
     log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
   
-  loc.scheme = loc.scheme or "gemini"
+  if not loc.host then
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    ios:close()
+    return
+  end
   
   if loc.scheme ~= 'gemini'
   or loc.host   ~= CONF.network.host
