@@ -134,6 +134,19 @@ function handler(conf,auth,loc,match)
     return read_file(final .. "/" .. conf.index)
   end
   
+  -- ----------------------------------------------------------------------
+  -- Because I'm that pedantic---if we get here, to generate a Gemini index
+  -- file for a directory sans an index file, if the passed in request did
+  -- NOT end in a '/', do a permanent redirect to a request WITH a final
+  -- '/'.  This is to ensure any mistakes with covering a directory in the
+  -- authorization block doesn't fail because the user included a trailing
+  -- '/' in the pattern ...
+  -- ----------------------------------------------------------------------
+  
+  if not loc.path:match "/$" then
+    return 31,uurl.esc_path:match(loc.path .. "/"),""
+  end
+  
   local res =
   {
     string.format("Index of %s",match[1]),
