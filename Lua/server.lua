@@ -45,6 +45,7 @@ end
 do
   local conf,err = loadfile(arg[1],"t",CONF)
   if not conf then
+    syslog('critical',"%s: %s",arg[1],err)
     io.stderr:write(string.format("%s: %s\n",arg[1],err))
     os.exit(exit.CONFIG,true)
   end
