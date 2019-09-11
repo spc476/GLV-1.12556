@@ -40,7 +40,7 @@ certificate =
 network =
 {
   host = "example.com", -- hostname of the server
-  addr = "0.0.0.0",     -- interface to listen on, IPv6 supported
+  addr = "0.0.0.0",     -- optional, interface to listen on, IPv6 supported
   port = 1965,          -- optional, port to listen on.
 }
 

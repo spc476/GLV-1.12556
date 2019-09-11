@@ -37,7 +37,6 @@ certificate =
 network =
 {
   host = "example.com",
-  addr = "0.0.0.0",
 }
 
 modules = "modules/?.lua" -- change as needed

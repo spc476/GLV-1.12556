@@ -60,10 +60,17 @@ do
   end
   
   if not CONF.network
-  or not CONF.network.host
-  or not CONF.network.addr then
+  or not CONF.network.host then
     syslog('critical',"%s: missing or bad network block",arg[1])
     os.exit(exit.CONFIG,true)
+  end
+  
+  if not CONF.network.addr then
+    CONF.network.addr = "::"
+  end
+  
+  if not CONF.network.port then
+    CONF.network.port = 1965
   end
   
   if CONF.modules then
@@ -72,10 +79,6 @@ do
   
   if CONF.cmodules then
     package.cpath = CONF.cmodules .. ";" .. package.cpath
-  end
-  
-  if not CONF.network.port then
-    CONF.network.port = 1965
   end
   
   if not CONF.syslog then
