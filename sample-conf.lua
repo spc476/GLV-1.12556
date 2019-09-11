@@ -222,6 +222,7 @@ handlers =
     module    = "filesystem",
     directory = "/var/gemini",
     index     = "index.gemini", -- optional, default value
+    extension = '.gemini',      -- optional, default value
     
     -- -----------------------------------------------------------------
     -- Optional, filter out filenames with the following patterns.  If

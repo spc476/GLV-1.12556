@@ -26,6 +26,7 @@ local syslog = require "org.conman.syslog"
 local errno  = require "org.conman.errno"
 local fsys   = require "org.conman.fsys"
 local magic  = require "org.conman.fsys.magic"
+local lpeg   = require "lpeg"
 local uurl   = require "url-util"
 local MSG    = require "MSG"
 local cgi    = require "cgi"
@@ -39,9 +40,23 @@ _ENV = {}
 
 -- ************************************************************************
 
+local extension do
+  local char = lpeg.C(lpeg.S"^$()%.[]*+-?") / "%%%1"
+             + lpeg.R" \255"
+  extension  = lpeg.Cs(char^1 * lpeg.Cc"$")
+end
+
+-- ************************************************************************
+
 function init(conf)
   if not conf.index then
     conf.index = "index.gemini"
+  end
+  
+  if not conf.extension then
+    conf.extension = '%.gemini$'
+  else
+    conf.extension = extension:match(conf.extension)
   end
   
   if not conf.no_access then
@@ -88,7 +103,7 @@ function handler(conf,auth,loc,match)
       return 40,MSG[40],""
     end
     
-    if file:match "%.gemini$" then
+    if file:match(conf.extension) then
       return contents("text/gemini")
     else
       return contents(magic(file))
