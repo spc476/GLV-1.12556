@@ -144,23 +144,30 @@ function handler(conf,auth,loc,match)
     end
   end
   
-  local final = conf.directory .. "/" .. match[1]
-  if fsys.access(final .. "/" .. conf.index,"r") then
-    return read_file(final .. "/" .. conf.index)
-  end
-  
   -- ----------------------------------------------------------------------
-  -- Because I'm that pedantic---if we get here, to generate a Gemini index
-  -- file for a directory sans an index file, if the passed in request did
-  -- NOT end in a '/', do a permanent redirect to a request WITH a final
-  -- '/'.  This is to ensure any mistakes with covering a directory in the
-  -- authorization block doesn't fail because the user included a trailing
-  -- '/' in the pattern ...
+  -- Because I'm that pedantic---if we get here, we at a directory.  If the
+  -- passed in request did NOT end in a '/', do a permanent redirect to a
+  -- request WITH a final '/'.  This is to ensure any mistakes with covering
+  -- a directory in the authorization block doesn't fail because the user
+  -- included a trailing '/' in the pattern ...
   -- ----------------------------------------------------------------------
   
   if not loc.path:match "/$" then
     return 31,uurl.esc_path:match(loc.path .. "/"),""
   end
+  
+  -- ------------------------
+  -- Check for an index file
+  -- ------------------------
+  
+  local final = conf.directory .. "/" .. match[1]
+  if fsys.access(final .. "/" .. conf.index,"r") then
+    return read_file(final .. "/" .. conf.index)
+  end
+  
+  -- --------------------------------------------
+  -- Nope, one doesn't exist, so let's build one
+  -- --------------------------------------------
   
   local res =
   {
