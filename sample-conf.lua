@@ -77,7 +77,7 @@ authorization =
     -- If the pattern matches the query path, apply the authrentication
     -- -----------------------------------------------------------------
     
-    path   = "^/private/",
+    path   = "^/private",
     
     -- ---------------------------------------------------------
     -- The return status if the check fails.  The values are:
