@@ -113,6 +113,19 @@ do
     end
     
     local function loadmod(info)
+      if not info.path then
+        syslog('error',"missing path field in handler")
+        info.path = ""
+        info.code = { handler = notfound }
+        return
+      end
+      
+      if not info.module then
+        syslog('error',"%s: missing module field",info.path)
+        info.code = { handler = notfound }
+        return
+      end
+      
       local okay,mod = pcall(require,info.module)
       if not okay then
         syslog('error',"%s: %s",info.module,mod)
