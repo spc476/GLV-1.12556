@@ -279,7 +279,7 @@ local function main(ios)
   -- Do our authorization checks.  This way, we can get consistent
   -- authorization checks across handlers.  We do this before anything else
   -- (even redirects) to prevent unintended leakage of data (resources that
-  -- might be available under authorizatin)
+  -- might be available under authorization)
   -- --------------------------------------------------------------
   
   local auth = { _remote = ios.__remote.addr }
