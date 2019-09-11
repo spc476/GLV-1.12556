@@ -241,43 +241,11 @@ local function main(ios)
   
   loc.path   = uurl.rm_dot_segs:match(loc.path)
   
-  -- -------------------------------------------------------------
-  -- We handle the various redirections here, the temporary ones,
-  -- the permanent ones, and those that are gone gone gone ...
-  -- I'm still unsure of the order I want these in ...
-  -- -------------------------------------------------------------
-  
-  for _,rule in ipairs(CONF.redirect.temporary) do
-    local match = table.pack(loc.path:match(rule[1]))
-    if #match > 0 then
-      local new = redirect_subst:match(rule[2],1,match)
-      log(ios,30,request,reply(ios,"30\t",new,"\r\n"))
-      ios:close()
-      return
-    end
-  end
-  
-  for _,rule in ipairs(CONF.redirect.permanent) do
-    local match = table.pack(loc.path:match(rule[1]))
-    if #match > 0 then
-      local new = redirect_subst:match(rule[2],1,match)
-      log(ios,31,request,reply(ios,"31\t",new,"\r\n"))
-      ios:close()
-      return
-    end
-  end
-  
-  for _,pattern in ipairs(CONF.redirect.gone) do
-    if loc.path:match(pattern) then
-      log(ios,52,request,reply(ios,"52\t",MSG[52],"\r\n"))
-      ios:close()
-      return
-    end
-  end
-  
   -- --------------------------------------------------------------
   -- Do our authorization checks.  This way, we can get consistent
-  -- authorization checks across handlers
+  -- authorization checks across handlers.  We do this before anything else
+  -- (even redirects) to prevent unintended leakage of data (resources that
+  -- might be available under authorizatin)
   -- --------------------------------------------------------------
   
   local auth = { _remote = ios.__remote.addr }
@@ -331,10 +299,44 @@ local function main(ios)
     end
   end
   
+  -- -------------------------------------------------------------
+  -- We handle the various redirections here, the temporary ones,
+  -- the permanent ones, and those that are gone gone gone ...
+  -- I'm still unsure of the order I want these in ...
+  -- -------------------------------------------------------------
+  
+  for _,rule in ipairs(CONF.redirect.temporary) do
+    local match = table.pack(loc.path:match(rule[1]))
+    if #match > 0 then
+      local new = redirect_subst:match(rule[2],1,match)
+      log(ios,30,request,reply(ios,"30\t",new,"\r\n"),auth)
+      ios:close()
+      return
+    end
+  end
+  
+  for _,rule in ipairs(CONF.redirect.permanent) do
+    local match = table.pack(loc.path:match(rule[1]))
+    if #match > 0 then
+      local new = redirect_subst:match(rule[2],1,match)
+      log(ios,31,request,reply(ios,"31\t",new,"\r\n"),auth)
+      ios:close()
+      return
+    end
+  end
+  
+  for _,pattern in ipairs(CONF.redirect.gone) do
+    if loc.path:match(pattern) then
+      log(ios,52,request,reply(ios,"52\t",MSG[52],"\r\n"),auth)
+      ios:close()
+      return
+    end
+  end
+  
   -- -------------------------------------
   -- Run through our installed handlers
   -- -------------------------------------
-
+  
   for _,info in ipairs(CONF.handlers) do
     local match = table.pack(loc.path:match(info.path))
     if #match > 0 then
