@@ -40,12 +40,12 @@ certificate =
 network =
 {
   host = "example.com", -- hostname of the server
-  addr = "0.0.0.0",             -- interface to listen on, IPv6 supported
-  port = 1965,                  -- port to listen on.
+  addr = "0.0.0.0",     -- interface to listen on, IPv6 supported
+  port = 1965,          -- optional, port to listen on.
 }
 
 -- ************************************************************************
--- syslog() definition block, required
+-- syslog() definition block, optional
 -- ************************************************************************
 
 syslog =
@@ -53,6 +53,56 @@ syslog =
   ident    = 'gemini', -- ID of server
   facility = 'daemon', -- syslog facility to log under
 }
+
+-- ************************************************************************
+-- Additional paths to load Lua modules, optional.  If you aren't using
+-- CGI, or any handlers, then you won't need to define these.
+-- ************************************************************************
+
+modules  = "/var/gemini/modules/?.lua" -- required, sadly
+cmodules = "/var/gemini/modules/?.so"  -- optional, no default
+
+-- ************************************************************************
+-- Authorization, optional
+--
+-- Apply authorization to various paths.  The path patterns are applied
+-- in order, and first match wins.
+-- ************************************************************************
+
+--[[
+authorization =
+{
+  {
+    -- -----------------------------------------------------------------
+    -- If the pattern matches the query path, apply the authrentication
+    -- -----------------------------------------------------------------
+    
+    path   = "^/private/",
+    
+    -- ---------------------------------------------------------
+    -- The return status if the check fails.  The values are:
+    --
+    -- 60 - Client certificate required
+    -- 61 - Transient client certificate required
+    -- 62 - Authorized client certificate required
+    --
+    -- 60 is the default value if not specified
+    -- ---------------------------------------------------------
+    
+    status = 62,
+    
+    -- ------------------------------------------------------------------
+    -- Function to check the certificate.  It's given the issuer
+    -- information, the subject information and the broken down request.
+    -- ------------------------------------------------------------------
+    
+    check  = function(issuer,subject,location)
+      return location.query
+         and isser.CN == "Conman Laboratories CA"
+         and subject.CN
+    end,
+  },
+--]]
 
 -- ************************************************************************
 -- Redirect definition block, optional
@@ -91,60 +141,9 @@ redirect =
 }
 --]]
 
--- ************************************************************************
--- Additional paths to load Lua modules, optional.  If you aren't using
--- CGI, or any handlers, then you won't need to define these.
--- ************************************************************************
-
---[[
-modules  = "/var/gemini/modules/?.lua"
-cmodules = "/var/gemini/modules/?.so"
---]]
 
 -- ************************************************************************
--- Authorization
---
--- Apply authorization to various paths.  The path patterns are applied
--- in order, and first match wins.
--- ************************************************************************
-
---[[
-authorization =
-{
-  {
-    -- -----------------------------------------------------------------
-    -- If the pattern matches the query path, apply the authrentication
-    -- -----------------------------------------------------------------
-    
-    path   = "'^/private/",
-    
-    -- ---------------------------------------------------------
-    -- The return status if the check fails.  The values are:
-    --
-    -- 60 - Client certificate required
-    -- 61 - Transient client certificate required
-    -- 62 - Authorized client certificate required
-    --
-    -- 60 is the default value if not specified
-    -- ---------------------------------------------------------
-    
-    status = 62,
-    
-    -- ------------------------------------------------------------------
-    -- Function to check the certificate.  It's given the issuer
-    -- information, the subject information and the broken down request.
-    -- ------------------------------------------------------------------
-    
-    check  = function(issuer,subject,location)
-      return location.query
-         and isser.CN == "Conman Laboratories CA"
-         and subject.CN
-    end,
-  },
---]]
-
--- ************************************************************************
--- Handlers
+-- Handlers, mostly optional
 --
 -- These handle all requests, and are used after all redirections are checked.
 -- The configuration options are entirely dependant upon the handler---the
@@ -161,10 +160,12 @@ handlers =
   -- a handler.  Can be safely removed.
   -- ----------------------
   
+  --[[
   {
     path   = '^/sample/(.*)',
     module = "sample",
   },
+  --]]
   
   -- -------------------------------------------------------------------
   -- Various handlers you probably don't (or can't) run (due to missing
@@ -227,7 +228,7 @@ handlers =
     -- not given, then by default, filter out files starting with a '.'
     -- -----------------------------------------------------------------
     
-    no_access =
+    no_access = -- optional
     {
       "^%.",  -- no to any dot files
       "%~$",  -- no to any backup files
@@ -334,7 +335,7 @@ cgi =
   -- envtls = true, -- only define if you want all scripts to have TLS vars
   
   -- -----------------------------------------------------------------
-  -- The following blocks allow you to define values per CGI script.
+  -- The instance block allow you to define values per CGI script.
   -- -----------------------------------------------------------------
   
   instance =
@@ -358,17 +359,6 @@ cgi =
       {
         SAMPLE_CONFIG = "sample.conf",
       }
-    },
-    
-    ['^/torture/(.*)'] =
-    {
-      module = "torture",
-      dir    = "torture",
-    },
-    
-    ['^(/hilo/)(.*)'] =
-    {
-      module = "hilo",
     },
   }
 }
