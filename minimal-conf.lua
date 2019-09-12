@@ -43,7 +43,7 @@ handlers =
 {
   {
     path      = ".*",
-    module    = "GLV-1.12556.handlers.filesystem",
+    module    = "GLV-1.handlers.filesystem",
     directory = "share", -- change as needed
   },
 }

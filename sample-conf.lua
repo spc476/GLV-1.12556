@@ -155,7 +155,7 @@ handlers =
   --[[
   {
     path   = '^/sample/(.*)',
-    module = "GLV-1.12556.handlers.sample",
+    module = "GLV-1.handlers.sample",
   },
   --]]
   
@@ -165,7 +165,7 @@ handlers =
   
   {
     path      = ".*",
-    module    = "GLV-1.12556.handlers.filesystem",
+    module    = "GLV-1.handlers.filesystem",
     directory = "/var/gemini",
     index     = "index.gemini", -- optional, default value
     extension = '.gemini',      -- optional, default value
