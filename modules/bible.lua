@@ -30,7 +30,7 @@ local io        = require "io"
 local math      = require "math"
 local string    = require "string"
 local table     = require "table"
-local uurl      = require "url-util"
+local uurl      = require "GLV-1.12556.url-util"
 
 local tonumber = tonumber
 

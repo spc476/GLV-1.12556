@@ -32,6 +32,8 @@ local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
 local url       = require "org.conman.parsers.url"
 local lpeg      = require "lpeg"
+local uurl      = require "GLV-1.12256.url-util"
+local MSG       = require "GLV-1.12556.MSG"
 
 local CONF = {}
 
@@ -173,9 +175,6 @@ do
   CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
   package.loaded.CONF = CONF
 end
-
-local uurl = require "url-util" -- XXX hack
-local MSG  = require "MSG"      -- XXX hack
 
 -- ************************************************************************
 

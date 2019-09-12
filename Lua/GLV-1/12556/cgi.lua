@@ -36,7 +36,7 @@ local os        = require "os"
 local string    = require "string"
 local coroutine = require "coroutine"
 local math      = require "math"
-local uurl      = require "url-util"
+local uurl      = require "GLV-1.12556.url-util"
 
 local pairs     = pairs
 local tostring  = tostring

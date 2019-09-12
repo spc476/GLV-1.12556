@@ -23,7 +23,7 @@
 -- luacheck: ignore 611
 
                  require "org.conman.math".randomseed()
-local uurl     = require "url-util"
+local uurl     = require "GLV-1.12556.url-util"
 local math     = require "math"
 local string   = require "string"
 local tonumber = tonumber
