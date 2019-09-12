@@ -13,7 +13,7 @@ Features:
 * Support for CGI
 	* Gemini-specific CGI scripts
 	* HTTP-specific CGI scripts
-* Support for user supplied directories
+* Support for user directories
 * Authentication by client certificates
 * Easily extensible with support for custom handlers
 * Configuration via file
