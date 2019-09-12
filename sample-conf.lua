@@ -158,6 +158,24 @@ handlers =
     module = "GLV-1.handlers.sample",
   },
   --]]
+
+  -- ------------------------------------
+  -- Handles public user directories
+  -- ------------------------------------
+  
+  --[[
+  {
+    path      = '/^%~([^/]+)(/.*)',
+    module    = "users",
+    directory = "public_gemini", -- optional, default value
+    index     = "index.gemini",  -- optional, default value
+    extension = ".gemini",       -- optional, default value
+    no_access = -- optional, see below
+    {
+      "^%.",  -- no to any dot files
+    },
+  },
+  --]]
   
   -- --------------------------------------
   -- Handles requests from a directory.
@@ -178,7 +196,6 @@ handlers =
     no_access = -- optional
     {
       "^%.",  -- no to any dot files
-      "%~$",  -- no to any backup files
     },
   },
 }
