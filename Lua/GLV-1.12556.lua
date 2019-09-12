@@ -32,7 +32,7 @@ local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
 local url       = require "org.conman.parsers.url"
 local lpeg      = require "lpeg"
-local uurl      = require "GLV-1.12256.url-util"
+local uurl      = require "GLV-1.12556.url-util"
 local MSG       = require "GLV-1.12556.MSG"
 
 local CONF = {}
