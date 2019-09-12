@@ -100,7 +100,7 @@ function handler(conf,auth,loc,match)
     end
     
     if not fsys.access(file,"r") then
-      return 40,MSG[40],""
+      return 51,MSG[51],""
     end
     
     if file:match(conf.extension) then
@@ -135,7 +135,7 @@ function handler(conf,auth,loc,match)
       -- -------------------------------------------
       if not fsys.access(name,"x") then
         syslog('error',"access(%q) failed",dir)
-        return 40,MSG[40],""
+        return 51,MSG[51],""
       end
     elseif info.mode.type == 'file' then
       return read_file(name)

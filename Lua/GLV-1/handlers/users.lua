@@ -45,13 +45,13 @@ end
 function handler(conf,auth,loc,match)
   local userdir = getuser(match[1])
   if not userdir then
-    return 41,MSG[41],""
+    return 51,MSG[51],""
   end
   
   userdir = userdir .. "/" .. conf.directory
   
   if not fsys.access(userdir,"rx") then
-    return 41,MSG[41],""
+    return 51,MSG[51],""
   end
   
   local fsconf =
