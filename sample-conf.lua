@@ -55,14 +55,6 @@ syslog =
 }
 
 -- ************************************************************************
--- Additional paths to load Lua modules, optional.  If you aren't using
--- CGI, or any handlers, then you won't need to define these.
--- ************************************************************************
-
-modules  = "/var/gemini/modules/?.lua" -- required, sadly
-cmodules = "/var/gemini/modules/?.so"  -- optional, no default
-
--- ************************************************************************
 -- Authorization, optional
 --
 -- Apply authorization to various paths.  The path patterns are applied
@@ -163,53 +155,7 @@ handlers =
   --[[
   {
     path   = '^/sample/(.*)',
-    module = "sample",
-  },
-  --]]
-  
-  -- -------------------------------------------------------------------
-  -- Various handlers you probably don't (or can't) run (due to missing
-  -- files, etc).  These were all made to make various points about
-  -- serving content via Gemini.
-  -- -------------------------------------------------------------------
-  
-  --[[
-  {
-    path   = '^/bible/(.*)',
-    module = "bible",
-    books  = "thebooks",
-    verses = "theverses",
-  },
-  
-  {
-    path   = '^/qotd$',
-    module = "qotd",
-    quotes = "quotes.txt",
-    index  = "quotes.index",
-    state  = "quotes.state",
-  },
-  
-  {
-    path   = '^/gRFC/(.*)',
-    module = "gRFC",
-    dir    = "gRFC",
-    path   = "/gRFC",
-  },
-  
-  {
-    path   = '^/test/torture/(.*)',
-    module = "torture",
-    dir    = "torture",
-  },
-  
-  {
-    path   = '^/test/wrap(%;?(%d*))',
-    module = "wrap",
-  },
-  
-  {
-    path   = '^(/hilo/)(.*)',
-    module = "hilo",
+    module = "GLV-1.12556.handlers.sample",
   },
   --]]
   
@@ -219,7 +165,7 @@ handlers =
   
   {
     path      = ".*",
-    module    = "filesystem",
+    module    = "GLV-1.12556.handlers.filesystem",
     directory = "/var/gemini",
     index     = "index.gemini", -- optional, default value
     extension = '.gemini',      -- optional, default value

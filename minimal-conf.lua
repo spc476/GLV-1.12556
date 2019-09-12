@@ -39,13 +39,11 @@ network =
   host = "example.com",
 }
 
-modules = "modules/?.lua" -- change as needed
-
 handlers =
 {
   {
     path      = ".*",
-    module    = "filesystem",
+    module    = "GLV-1.12556.handlers.filesystem",
     directory = "share", -- change as needed
   },
 }
