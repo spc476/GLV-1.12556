@@ -56,6 +56,17 @@ end
 
 local function main(location,usecert)
   local loc = url:match(location)
+  
+  if not loc then
+    io.stderr:write("Parse error with given URL\n")
+    os.exit(1)
+  end
+  
+  if loc.scheme ~= 'gemini' then
+    io.stderr:write(string.format("%s: scheme %q not supported\n",location,loc.scheme))
+    os.exit(1)
+  end
+  
   local ios = tls.connect(loc.host,loc.port,nil,function(conf)
     if usecert then
       if not conf:cert_file(CERT)
