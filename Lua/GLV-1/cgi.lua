@@ -37,6 +37,7 @@ local string    = require "string"
 local coroutine = require "coroutine"
 local math      = require "math"
 local uurl      = require "GLV-1.url-util"
+local MSG       = require "GLV-1.MSG"
 
 local pairs     = pairs
 local tostring  = tostring
@@ -174,12 +175,12 @@ return function(auth,program,location)
   
   if not conf then
     syslog('error',"CGI script called, but CGI not configured!")
-    return 40,"Temporary Error",""
+    return 40,MSG[40],""
   end
   
   local pipe = fsys.pipe()
   if not pipe then
-    return 40,"Temporary Error",""
+    return 40,MSG[40],""
   end
   
   pipe.read:setvbuf('no') -- buffering kills the event loop
@@ -188,7 +189,7 @@ return function(auth,program,location)
   
   if not child then
     syslog('error',"process.fork() = %s",errno[err])
-    return 40,"Temporary Error",""
+    return 40,MSG[40],""
   end
   
   -- =========================================================
@@ -387,7 +388,7 @@ return function(auth,program,location)
   
   if not info then
     syslog('error',"process.wait() = %s",errno[err1])
-    return 40,"Temporary Error",""
+    return 40,MSG[40],""
   end
   
   if info.status == 'normal' then
@@ -396,7 +397,7 @@ return function(auth,program,location)
       
       if not headers then
         syslog('error',"%s: is this a CGI program?",program)
-        return 40,"Temporary Error",""
+        return 40,MSG[40],""
       end
       
       if headers['Location'] then
@@ -409,10 +410,10 @@ return function(auth,program,location)
       return status,mime,data
     else
       syslog('warning',"program=%q status=%d",program,info.rc)
-      return 40,"Temporary Error",""
+      return 40,MSG[40],""
     end
   else
     syslog('error',"program=%q status=%s description=%s",program,info.status,info.description)
-    return 40,"Temporary Error",""
+    return 40,MSG[40],""
   end
 end
