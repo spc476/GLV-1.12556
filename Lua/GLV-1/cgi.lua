@@ -394,6 +394,11 @@ return function(auth,program,location)
     if info.rc == 0 then
       local headers = parse_headers:match(hdrs)
       
+      if not headers then
+        syslog('error',"%s: is this a CGI program?",program)
+        return 40,"Temporary Error",""
+      end
+      
       if headers['Location'] then
         local status = headers['Status'] or 31
         return status,headers['Location'],""
