@@ -37,6 +37,8 @@ local MSG       = require "GLV-1.MSG"
 
 local CONF = {}
 
+magic:flags("mime")
+
 -- ************************************************************************
 
 if #arg == 0 then
@@ -161,8 +163,6 @@ do
       loadmod(info)
     end
   end
-  
-  magic:flags('mime')
   
   CONF._internal      = {}
   CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
