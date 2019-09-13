@@ -54,6 +54,15 @@ do
   
   conf()
   
+  if not CONF.syslog then
+    CONF.syslog = { ident = "gemini" , facility = "daemon" }
+  else
+    CONF.syslog.ident    = CONF.syslog.ident    or "gemini"
+    CONF.syslog.facility = CONF.syslog.facility or "daemon"
+  end
+  
+  syslog.open(CONF.syslog.ident,CONF.syslog.facility)
+  
   if not CONF.certificate
   or not CONF.certificate.cert
   or not CONF.certificate.key then
@@ -73,13 +82,6 @@ do
   
   if not CONF.network.port then
     CONF.network.port = 1965
-  end
-  
-  if not CONF.syslog then
-    CONF.syslog = { ident = "gemini" , facility = "daemon" }
-  else
-    CONF.syslog.ident    = CONF.syslog.ident    or "gemini"
-    CONF.syslog.facility = CONF.syslog.facility or "daemon"
   end
   
   if not CONF.authorization then
@@ -159,9 +161,8 @@ do
       loadmod(info)
     end
   end
-
+  
   magic:flags('mime')
-  syslog.open(CONF.syslog.ident,CONF.syslog.facility)
   
   CONF._internal      = {}
   CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
