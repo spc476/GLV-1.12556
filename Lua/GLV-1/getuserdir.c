@@ -26,7 +26,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 
-static int getuser(lua_State *L)
+static int getuserdir(lua_State *L)
 {
   struct passwd *ent = getpwnam(luaL_checkstring(L,1));
   if (ent != NULL)
@@ -36,8 +36,8 @@ static int getuser(lua_State *L)
   return 1;
 }
 
-int luaopen_1_getuser(lua_State *L)
+int luaopen_1_getuserdir(lua_State *L)
 {
-  lua_pushcfunction(L,getuser);
+  lua_pushcfunction(L,getuserdir);
   return 1;
 }
