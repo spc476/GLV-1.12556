@@ -60,7 +60,7 @@ To fine tune, you can from the command line:
 
 The various [location] options are (multiple can be specified)
 
-	predix=taget-dir
+	prefix=target-dir
 
 		target-dir/bin/GLV-1.12556
 		target-dir/lib/lua/5.3/GLV-1
@@ -102,7 +102,7 @@ applied to requests via pattern matching of the request.
 To run CGI scripts, you'll need to include the cgi section in the
 configuration file,  After that, any file that the filesystem handler
 encounters that is marked executable will be treated as a CGI script and
-run.  If CGI is NOT enable, the server will simply return a temporary error
+run.  If CGI is NOT enabled, the server will simply return a temporary error
 (and log the condition via syslog()).
 
 Miscellaneous:
