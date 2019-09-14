@@ -48,7 +48,7 @@ function handler(_,_,loc,match)
   local guess = uurl.esc_query:match(loc.query)
   
   if guess:match "^[%+%-][%d]" then
-    return 10,"Guess anumber (just digits, no plus or minus sign)",""
+    return 10,"Guess a number (just digits, no plus or minus sign)",""
   end
   
   if guess:match "^[%D]" then
