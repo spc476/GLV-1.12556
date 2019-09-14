@@ -54,7 +54,7 @@ endif
 
 .PHONY: all luacheck clean install uninstall
 
-all:	Lua/GLV-1/getuser.so
+all:	Lua/GLV-1/getuserdir.so
 
 luacheck:
 	luacheck $(shell find . -name '*.lua')

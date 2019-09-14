@@ -24,7 +24,7 @@
 
 local fsys       = require "org.conman.fsys"
 local filesystem = require "GLV-1.handlers.filesystem"
-local getuser    = require "GLV-1.getuser"
+local getuserdir = require "GLV-1.getuserdir"
 local MSG        = require "GLV-1.MSG"
 
 _ENV = {}
@@ -43,7 +43,7 @@ end
 -- ************************************************************************
 
 function handler(conf,auth,loc,match)
-  local userdir = getuser(match[1])
+  local userdir = getuserdir(match[1])
   if not userdir then
     return 51,MSG[51],""
   end
