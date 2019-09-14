@@ -45,7 +45,36 @@ function handler(_,_,loc,match)
     return 10,"Guess a number",""
   end
   
-  local guess = tonumber(uurl.esc_query:match(loc.query))
+  local guess = uurl.esc_query:match(loc.query)
+  
+  if guess:match "^[%+%-][%d]" then
+    return 10,"Guess anumber (just digits, no plus or minus sign)",""
+  end
+  
+  if guess:match "^[%D]" then
+    return 20,"text/gemini","\r\n"
+           .. "Sigh.  I think your client is buggy and is assuming\r\n"
+           .. "that the query string needs to start with the name,\r\n"
+           .. "which it does not.  It just needs to be\r\n"
+           .. "a number.  You might want to try again.  Sorry.\r\n"
+           .. "\r\n"
+           .. string.format("=> %s Try again\r\n",match[1])
+           .. string.format("=> / Top level menu\r\n")
+  end
+  
+  if guess:match "%?" then
+    return 20,"text/gemini","\r\n"
+           .. "Sign.  I think your client is buggy and has appended a\r\n"
+           .. "second query string to one that already exists.  The query\r\n"
+           .. 'your client sent, "' .. loc.query .. '" is not proper.  It\r\n'
+           .. "should be just a number. You might want to try again.  Sorry.\r\n"
+           .. "\r\n"
+           .. string.format("=> %s Try again\r\n",match[1])
+           .. string.format("=> / Top level menu\r\n")
+  end
+  
+  guess = tonumber(guess)
+  
   if not guess then
     return 10,"Guess a number",""
   end
