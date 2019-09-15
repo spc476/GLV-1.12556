@@ -265,7 +265,15 @@ local function main(ios)
     return
   end
   
-  loc.path   = uurl.rm_dot_segs:match(loc.path)
+  -- ---------------------------------------------------------------
+  -- Relative path resolution is the domain of the client, not the
+  -- server.  So reject any requests with relative path elements.
+  -- ---------------------------------------------------------------
+  
+  if loc.path:match "/%.%./" or loc.path:match "/%./" then
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    ios:close()
+  end
   
   -- --------------------------------------------------------------
   -- Do our authorization checks.  This way, we can get consistent
