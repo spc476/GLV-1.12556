@@ -166,7 +166,7 @@ handlers =
   --[[
   {
     path      = '/^%~([^/]+)(/.*)',
-    module    = "users",
+    module    = "GLV-1.handlers.userdir",
     directory = "public_gemini", -- optional, default value
     index     = "index.gemini",  -- optional, default value
     extension = ".gemini",       -- optional, default value
