@@ -63,7 +63,7 @@ clean:
 	$(RM) $(shell find . -name '*~')
 	$(RM) $(shell find . -name '*.so')
 
-install: Lua/GLV-1/getuser.so
+install: Lua/GLV-1/getuserdir.so
 	$(INSTALL) -d $(DESTDIR)$(LIBDIR)/GLV-1
 	$(INSTALL) -d $(DESTDIR)$(LUADIR)/GLV-1
 	$(INSTALL) -d $(DESTDIR)$(LUADIR)/GLV-1/handlers
