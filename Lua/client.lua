@@ -40,6 +40,7 @@ local statparse do
   local C  = lpeg.C
   local P  = lpeg.P
   local R  = lpeg.R
+  local S  = lpeg.S
   
   local status   = P"1" * R"09" * Cc'input'    * Cc'required'  * Cc(true)
                  + P"2" * R"09" * Cc'okay'     * Cc'content'   * Cc(true)
@@ -47,7 +48,7 @@ local statparse do
                  + P"4" * R"09" * Cc'error'    * Cc'temporary' * Cc(true)
                  + P"5" * R"09" * Cc'error'    * Cc'permanent' * Cc(true)
                  + P"6" * R"09" * Cc'auth'     * Cc'required'  * Cc(true)
-  local infotype = P"\t" * C(R" \255"^0)
+  local infotype = S" \t"^1 * C(R" \255"^0)
                  + Cc"type/text; charset=utf-8"
   statparse      = status * infotype
 end
