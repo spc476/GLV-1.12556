@@ -104,10 +104,3 @@ configuration file,  After that, any file that the filesystem handler
 encounters that is marked executable will be treated as a CGI script and
 run.  If CGI is NOT enabled, the server will simply return a temporary error
 (and log the condition via syslog()).
-
-Miscellaneous:
-
-The handlers under GLV-1.handlers.non-std are in use with my server and
-require additional files and configuration than mentioned here.  You can use
-these to see how handlers are written, but these are specialized for the
-content on my server at <gemini://gemini.conman.org/>.
