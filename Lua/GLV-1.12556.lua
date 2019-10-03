@@ -141,6 +141,8 @@ do
         return
       end
       
+      info.code = mod
+      
       if not mod.handler then
         syslog('error',"%s: missing handler()",info.module)
         mod.handler = notfound
@@ -155,8 +157,6 @@ do
           return
         end
       end
-      
-      info.code = mod
     end
     
     for _,info in ipairs(CONF.handlers) do
