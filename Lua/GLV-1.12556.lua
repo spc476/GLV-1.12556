@@ -315,15 +315,15 @@ local function main(ios)
         return
       end
       
-      local okay,err = pcall(rule.check,auth.issuer,auth.subject,loc)
+      local okay,allowed = pcall(rule.check,auth.issuer,auth.subject,loc)
       if not okay then
-        syslog('error',"%s: %s",rule.path,err)
+        syslog('error',"%s: %s",rule.path,allowed)
         log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),auth)
         ios:close()
         return
       end
       
-      if not auth then
+      if not allowed then
         log(ios,63,request,reply(ios,"63\t",MSG[63],"\r\n"),auth)
         ios:close()
         return
