@@ -281,7 +281,11 @@ local function main(ios)
   -- might be available under authorization)
   -- --------------------------------------------------------------
   
-  local auth = { _remote = ios.__remote.addr }
+  local auth =
+  {
+    _remote = ios.__remote.addr,
+    _port   = ios.__remote.port
+  }
   
   for _,rule in ipairs(CONF.authorization) do
     if loc.path:match(rule.path) then
