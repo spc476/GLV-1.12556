@@ -1,10 +1,10 @@
 
-GLV-1.12556: The First Gemini Protocol Server
+# GLV-1.12556: The First Gemini Protocol Server
 
 It's named after the NASA designation for Gemini 1, which is fitting,
 because it's the first Gemini protocol server written.
 
-Features:
+## Features:
 
 * Serves any type of document
 * Configurable filenames for default Gemini index files
@@ -22,44 +22,51 @@ Prerequisites:
 
 * Lua 5.3
 * LibreSSL 2.5.0 or higher
-* GNU libmagic (NOTE:  This is NOT image manipulation, but file
-	identification)
+* GNU libmagic (NOTE:  This is NOT image manipulation, but rather, file identification)
 * A whole bunch of Lua modules, availble at:
 	* https://github.com/spc476/lua-conmanorg
 	* https://github.com/spc476/LPeg-Parsers
 
-Installation:
+## Installation:
 
 This will require some work.  You will need to download the modules listed
 above from Github and get them installed.  The lua-conmanorg repository will
-take some futzing around to get it compiled (first hint:  remove any mention
-of tcc in the Makefile).  But once you have all the prerequisites installed,
-the server should just work.  
+take some futzing around to get it compiled _(first hint:  remove any mention
+of tcc in the Makefile)_.  But once you have all the prerequisites installed,
+the server _should just work_.  
 
-Bulding:
+## Bulding:
 
-Just type "make" (there's one C module that might be required, depending
+Just type `make` (there's one C module that might be required, depending
 upon your desired configuration).  If you have the Lua include files in a
 non-standard location, you may need to do:
 
+```
 	make LUA_INCDIR=/path/to/Lua/includes
+```
+You can do `make install` if you want to install the server onto the system:
 
-You can do "make install" if you want to install the server onto the system:
-
+```
 	make install
+```
 
 This will install files in the following locations:
 
-	/usr/local/bin/GLV-1.12556	# server
-	/usr/local/lib/lua/5.3/GLV-1	# server modules (written in C)
-	/usr/local/share/lua/5.3/GLV-1	# server modules (written in Lua)
+      | **Location** | **Resource** |
+      |---|:---:|
+      | /usr/local/bin/GLV-1.12556 | Server |
+      | /usr/local/lib/lua/5.3/GLV-1 | Server modules (written in C) |
+      | /usr/local/share/lua/5.3/GLV-1 | Server modules (written in Lua) |
 
 To fine tune, you can from the command line:
 
+```
 	make [location] install
+```
 
-The various [location] options are (multiple can be specified)
+The various [location] options are (multiple can be specified):
 
+```
 	prefix=target-dir
 
 		target-dir/bin/GLV-1.12556
@@ -77,23 +84,26 @@ The various [location] options are (multiple can be specified)
 	BINDIR=target-dir
 
 		target-dir/GLV-1.12556	# server program
+```
 
 If the Lua include files are in a non-standard location, you can specify:
 
+```
 	make LUA_INCDIR=/path/to/lua/includes
+```
 
 But you do not need to install anything if you run GLV-1.12556.lua directly
 in the Lua subdirectory.  The program requires a single argument, the
 location of the configuration file.
 
-Configuration:
+## Configuration:
 
 You will need to generate a certificate, as the protocol requires the use of
 TLS.  There are plenty of on-line tortorials about generating a self-signed
 certificate, or you could use a certificate from Let's Encrypt.
 
-The file "minimal-conf.lua" is the bare minimum configuration file you'll
-need to serve up files from a directory, but do look at the sample-conf.lua
+The file `minimal-conf.lua` is the bare minimum configuration file you'll
+need to serve up files from a directory, but do look at the `sample-conf.lua`
 file as that has extensive comments about each section and what is required,
 and what isn't.  It will help to know some Lua, especially Lua string
 patterns (its form of regex) as various sections of the configuration are
