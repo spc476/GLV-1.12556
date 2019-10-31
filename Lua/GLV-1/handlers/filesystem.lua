@@ -85,8 +85,9 @@ end
 function handler(conf,auth,loc,match)
   local function read_file(file)
     local function contents(mime)
-      local f = io.open(file)
+      local f,err = io.open(file,"rb")
       if not f then
+        syslog('error',"%s: %s",file,err)
         return 40,MSG[40],""
       end
       
