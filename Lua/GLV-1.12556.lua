@@ -206,7 +206,12 @@ local function reply(ios,...)
     bytes = bytes + #tostring(item)
   end
   
-  ios:write(...)
+  local okay,err = ios:write(...)
+
+  if not okay then
+    syslog('error',"ios:write() = %s",err)
+  end
+  
   return bytes
 end
 
