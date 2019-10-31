@@ -52,11 +52,11 @@ You can do `make install` if you want to install the server onto the system:
 
 This will install files in the following locations:
 
-      Location | Resource
-      --- | ---
-      /usr/local/bin/GLV-1.12556 | Server
-      /usr/local/lib/lua/5.3/GLV-1 | Server modules (written in C)
-      /usr/local/share/lua/5.3/GLV-1 | Server modules (written in Lua)
+Location | Resource
+--- | ---
+/usr/local/bin/GLV-1.12556 | Server
+/usr/local/lib/lua/5.3/GLV-1 | Server modules (written in C)
+/usr/local/share/lua/5.3/GLV-1 | Server modules (written in Lua)
 
 To fine tune, you can from the command line:
 
