@@ -163,8 +163,6 @@ do
     end
   end
   
-  CONF._internal      = {}
-  CONF._internal.addr = net.address2(CONF.network.addr,'any','tcp',CONF.network.port)[1]
   package.loaded.CONF = CONF
 end
 
@@ -401,7 +399,7 @@ end
 
 -- ************************************************************************
 
-local okay,err = tls.listena(CONF._internal.addr,main,function(conf)
+local okay,err = tls.listen(CONF.network.addr,CONF.network.port,main,function(conf)
   conf:verify_client_optional()
   conf:insecure_no_verify_cert()
   return conf:cert_file(CONF.certificate.cert)
