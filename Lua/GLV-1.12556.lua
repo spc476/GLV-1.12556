@@ -240,6 +240,16 @@ local function main(ios)
     return
   end
   
+  -- -------------------------------------------------
+  -- Current Gemini spec lists URLS max limit as 1024.
+  -- -------------------------------------------------
+  
+  if #request > 1024 then
+    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    ios:close()
+    return
+  end
+  
   local loc = url:match(request)
   if not loc then
     log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
