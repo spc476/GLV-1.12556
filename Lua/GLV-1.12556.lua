@@ -257,10 +257,12 @@ local function main(ios)
     return
   end
   
+  -- ---------------------------------------------------------------
+  -- If a scheme isn't given, then a scheme of 'gemini:' is assumed.
+  -- ---------------------------------------------------------------
+  
   if not loc.scheme then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
-    ios:close()
-    return
+    loc.scheme = 'gemini'
   end
   
   if not loc.host then
