@@ -178,8 +178,9 @@ return function(auth,program,location)
     return 40,MSG[40],""
   end
   
-  local pipe = fsys.pipe()
+  local pipe,err1 = fsys.pipe()
   if not pipe then
+    syslog('error',"CGI pipe: %s",errno[err1])
     return 40,MSG[40],""
   end
   
@@ -229,46 +230,21 @@ return function(auth,program,location)
       pipe.read:close()
     end
     
+    local cwd  = conf.cwd
+    local args = parse_cgi_args:match(location.query or "") or {}
+    local env  = {}
     local prog
-
+    
     if program:match "^/" then
       prog = uurl.rm_dot_segs:match(program)
     else
       prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
     end
     
-    local args = parse_cgi_args:match(location.query or "") or {}
-    local env  =
-    {
-      GATEWAY_INTERFACE = "CGI/1.1",
-      QUERY_STRING      = location.query or "",
-      REMOTE_ADDR       = auth._remote,
-      REMOTE_HOST       = auth._remote,
-      REQUEST_METHOD    = "",
-      SCRIPT_NAME       = program:sub(2,-1),
-      SERVER_NAME       = location.host,
-      SERVER_PORT       = tostring(location.port),
-      SERVER_PROTOCOL   = "GEMINI",
-      SERVER_SOFTWARE   = "GLV-1.12556/1",
-    }
-    
     if conf.env then
       for var,val in pairs(conf.env) do
         env[var] = val
       end
-    end
-    
-    -- -----------------------------------------------------------------------
-    -- The passed in dir is a relative path starting with "./".  So when
-    -- searching for dir in location.path, start just past the leading period.
-    -- -----------------------------------------------------------------------
-    
-    local _,e      = location.path:find(fsys.basename(program),1,true)
-    local pathinfo = e and location.path:sub(e+1,-1) or location.path
-    
-    if pathinfo ~= "" then
-      env.PATH_INFO       = pathinfo
-      env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
     end
     
     -- ===================================================
@@ -279,7 +255,7 @@ return function(auth,program,location)
       env.HTTP_ACCEPT          = "*/*"
       env.HTTP_ACCEPT_LANGUAGE = "*"
       env.HTTP_CONNECTION      = "close"
-      env.HTTP_HOST            = env.SERVER_NAME
+      env.HTTP_HOST            = location.host
       env.HTTP_REFERER         = ""
       env.HTTP_USER_AGENT      = ""
     end
@@ -329,7 +305,7 @@ return function(auth,program,location)
         env.SSL_CLIENT_V_START  = os.date("%b %d %H:%M:%S %Y GMT",auth.notbefore)
         env.SSL_CLIENT_V_END    = os.date("%b %d %H:%M:%S %Y GMT",auth.notafter)
         env.SSL_CLIENT_V_REMAIN = remain
-        env.SSL_TLS_SNI         = env.SERVER_NAME
+        env.SSL_TLS_SNI         = location.host
         
         breakdown("SSL_CLIENT_I_DN_",auth.issuer)
         breakdown("SSL_CLIENT_S_DN_",auth.subject)
@@ -340,12 +316,6 @@ return function(auth,program,location)
     end
     
     -- ===================================================
-    
-    local cwd = conf.cwd
-    
-    if conf.http     then add_http()              end
-    if conf.apache   then add_apache()            end
-    if conf.envtls   then add_tlsenv(conf.apache) end
     
     if conf.instance then
       for name,info in pairs(conf.instance) do
@@ -363,13 +333,42 @@ return function(auth,program,location)
       end
     end
     
+    env.GATEWAY_INTERFACE = "CGI/1.1"
+    env.QUERY_STRING      = location.query or ""
+    env.REMOTE_ADDR       = auth._remote
+    env.REMOTE_HOST       = auth._remote
+    env.REQUEST_METHOD    = ""
+    env.SCRIPT_NAME       = program:sub(2,-1)
+    env.SERVER_NAME       = location.host
+    env.SERVER_PORT       = tostring(location.port)
+    env.SERVER_PROTOCOL   = "GEMINI"
+    env.SERVER_SOFTWARE   = "GLV-1.12556/1"
+    
+    -- -----------------------------------------------------------------------
+    -- The passed in dir is a relative path starting with "./".  So when
+    -- searching for dir in location.path, start just past the leading period.
+    -- -----------------------------------------------------------------------
+    
+    local _,e      = location.path:find(fsys.basename(program),1,true)
+    local pathinfo = e and location.path:sub(e+1,-1) or location.path
+    
+    if pathinfo ~= "" then
+      env.PATH_INFO       = pathinfo
+      env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
+    end
+    
+    if conf.http     then add_http()              end
+    if conf.apache   then add_apache()            end
+    if conf.envtls   then add_tlsenv(conf.apache) end
+    
     if cwd then
-      local okay,err1 = fsys.chdir(cwd)
+      local okay,err2 = fsys.chdir(cwd)
       if not okay then
-        syslog('error',"CGI cwd(%q) = %s",cwd,errno[err1])
+        syslog('error',"CGI cwd(%q) = %s",cwd,errno[err2])
         process.exit(exit.CONFIG)
       end
     end
+    
     process.exec(prog,args,env)
     process.exit(exit.OSERR)
   end
@@ -384,10 +383,10 @@ return function(auth,program,location)
   local data = inp:read("a")
   inp:close()
   
-  local info,err1 = process.wait(child)
+  local info,err2 = process.wait(child)
   
   if not info then
-    syslog('error',"process.wait() = %s",errno[err1])
+    syslog('error',"process.wait() = %s",errno[err2])
     return 40,MSG[40],""
   end
   
