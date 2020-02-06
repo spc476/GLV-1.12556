@@ -29,8 +29,8 @@ local fsys      = require "org.conman.fsys"
 local magic     = require "org.conman.fsys.magic"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
-local url       = require "org.conman.parsers.url"
 local lpeg      = require "lpeg"
+local url       = require "org.conman.parsers.url" * lpeg.P(-1)
 local MSG       = require "GLV-1.MSG"
 
 local CONF = {}
@@ -251,7 +251,7 @@ local function main(ios)
   
   local loc = url:match(request)
   if not loc then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
