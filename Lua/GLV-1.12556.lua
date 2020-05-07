@@ -286,6 +286,7 @@ local function main(ios)
   if loc.path:match "/%.%./" or loc.path:match "/%./" then
     log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
+    return
   end
   
   -- --------------------------------------------------------------
