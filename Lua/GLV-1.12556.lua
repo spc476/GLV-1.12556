@@ -244,7 +244,7 @@ local function main(ios)
   -- -------------------------------------------------
   
   if #request > 1024 then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -265,7 +265,7 @@ local function main(ios)
   end
   
   if not loc.host then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -273,7 +273,7 @@ local function main(ios)
   if loc.scheme ~= 'gemini'
   or loc.host   ~= CONF.network.host
   or loc.port   ~= CONF.network.port then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -284,7 +284,7 @@ local function main(ios)
   -- ---------------------------------------------------------------
   
   if loc.path:match "/%.%./" or loc.path:match "/%./" then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
   end
