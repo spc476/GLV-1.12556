@@ -333,16 +333,19 @@ return function(auth,program,location)
       end
     end
     
-    env.GATEWAY_INTERFACE = "CGI/1.1"
-    env.QUERY_STRING      = location.query or ""
-    env.REMOTE_ADDR       = auth._remote
-    env.REMOTE_HOST       = auth._remote
-    env.REQUEST_METHOD    = ""
-    env.SCRIPT_NAME       = program:sub(2,-1)
-    env.SERVER_NAME       = location.host
-    env.SERVER_PORT       = tostring(location.port)
-    env.SERVER_PROTOCOL   = "GEMINI"
-    env.SERVER_SOFTWARE   = "GLV-1.12556/1"
+    env.GEMINI_DOCUMENT_ROOT   = conf.cwd or fsys.getcwd()
+    env.GEMINI_SCRIPT_FILENAME = program
+    env.GEMINI_URL_PATH        = location.path
+    env.GATEWAY_INTERFACE      = "CGI/1.1"
+    env.QUERY_STRING           = location.query or ""
+    env.REMOTE_ADDR            = auth._remote
+    env.REMOTE_HOST            = auth._remote
+    env.REQUEST_METHOD         = ""
+    env.SCRIPT_NAME            = program:sub(2,-1)
+    env.SERVER_NAME            = location.host
+    env.SERVER_PORT            = tostring(location.port)
+    env.SERVER_PROTOCOL        = "GEMINI"
+    env.SERVER_SOFTWARE        = "GLV-1.12556/1"
     
     -- -----------------------------------------------------------------------
     -- The passed in dir is a relative path starting with "./".  So when
