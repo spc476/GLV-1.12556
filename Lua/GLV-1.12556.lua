@@ -289,6 +289,17 @@ local function main(ios)
     return
   end
   
+  -- -----------------------------------------------------------------------
+  -- While POSIX can deal with multiple '/' in a path, I've decided to treat
+  -- sequential '//' in a URL as an invalid request.
+  -- -----------------------------------------------------------------------
+  
+  if loc.path:match "//+" then
+    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
+    ios:close()
+    return
+  end
+  
   -- --------------------------------------------------------------
   -- Do our authorization checks.  This way, we can get consistent
   -- authorization checks across handlers.  We do this before anything else
