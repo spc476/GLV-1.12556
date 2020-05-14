@@ -21,6 +21,7 @@ Features:
 Prerequisites:
 
 * Lua 5.3
+* Lpeg 1.0.0 or higher
 * LibreSSL 2.5.0 or higher
 * GNU libmagic (NOTE:  This is NOT image manipulation, but file
 	identification)
