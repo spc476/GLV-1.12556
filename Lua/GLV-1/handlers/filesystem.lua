@@ -97,7 +97,7 @@ function handler(conf,auth,loc,match)
     end
     
     if fsys.access(file,"rx") then
-      return cgi(auth,file,loc)
+      return cgi(auth,file,conf.directory,loc)
     end
     
     if not fsys.access(file,"r") then

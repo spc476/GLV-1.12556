@@ -170,10 +170,24 @@ end
 
 -- ************************************************************************
 
-return function(auth,program,location)
-  local conf = require "CONF".cgi
+return function(auth,program,directory,location)
+  local sconf = require "CONF".cgi or {}
+  local hconf = require "CONF".hosts[location.host].cgi or {}
   
-  if not conf then
+  -- ------------------------------------------------------------------------
+  -- If the cgi block is not defined for the server, nor for a host, and we
+  -- get here, then there's been a misconfiguration.  Report the error.  The
+  -- other case is when the host has explicitely set 'cgi = false', in which
+  -- case, that host is opting out of CGI support entirely, so report the
+  -- error in that case too.
+  -- ------------------------------------------------------------------------
+  
+  if not sconf and not hconf then
+    syslog('error',"CGI script called, but CGI not configured!")
+    return 40,MSG[40],""
+  end
+  
+  if hconf == false then
     syslog('error',"CGI script called, but CGI not configured!")
     return 40,MSG[40],""
   end
@@ -230,7 +244,6 @@ return function(auth,program,location)
       pipe.read:close()
     end
     
-    local cwd  = conf.cwd
     local args = parse_cgi_args:match(location.query or "") or {}
     local env  = {}
     local prog
@@ -241,11 +254,16 @@ return function(auth,program,location)
       prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
     end
     
-    if conf.env then
-      for var,val in pairs(conf.env) do
-        env[var] = val
+    local function merge_env(accenv,menv)
+      if menv then
+        for var,val in pairs(menv) do
+          accenv[var] = val
+        end
       end
     end
+    
+    merge_env(env,sconf.env)
+    merge_env(env,hconf.env)
     
     -- ===================================================
     
@@ -263,7 +281,7 @@ return function(auth,program,location)
     -- ===================================================
     
     local function add_apache()
-      env.DOCUMENT_ROOT         = fsys.getcwd()
+      env.DOCUMENT_ROOT         = directory
       env.CONTEXT_DOCUMENT_ROOT = env.DOCUMENT_ROOT
       env.CONTEXT_PREFIX        = ""
       env.SCRIPT_FILENAME       = prog
@@ -317,25 +335,43 @@ return function(auth,program,location)
     
     -- ===================================================
     
-    if conf.instance then
-      for name,info in pairs(conf.instance) do
-        if location.path:match(name) then
-          if info.cwd     then cwd = info.cwd            end
-          if info.http    then add_http()                end
-          if info.apache  then add_apache()              end
-          if info.envtls  then add_tlsenv(info.apache)   end
-          if info.env then
-            for var,val in pairs(info.env) do
-              env[var] = val
-            end
+    local function get_instance(list)
+      if list then
+        for name,info in pairs(list) do
+          if location.path:match(name) then
+            return info
           end
         end
       end
+      return {}
     end
     
-    env.GEMINI_DOCUMENT_ROOT   = conf.cwd or fsys.getcwd()
+    local function include_field(hci,hc,sci,sc)
+      if hci ~= nil then return hci end
+      if hc  ~= nil then return hc  end
+      if sci ~= nil then return sci end
+      return sc
+    end
+    
+    local sconfi = get_instance(sconf.instance)
+    local hconfi = get_instance(hconf.instance)
+    local cwd    = hconfi.cwd or hconf.cwd or sconfi.cwd or sconf.cwd or directory
+    
+    if (include_field(hconfi.http,hconf.http,sconfi.http,sconf.http))         then add_http()   end
+    if (include_field(hconfi.apache,hconf.apache,sconfi.apache,sconf.apache)) then add_apache() end
+    if (include_field(hconfi.envtls,hconf.envtls,sconfi.envtls,sconf.envtls)) then
+      add_tlsenv(hconfi.apache or hconf.apache or sconfi.apache,sconf.apache)
+    end
+    
+    merge_env(env,sconf.env)
+    merge_env(env,sconfi.env)
+    merge_env(env,hconf.env)
+    merge_env(env,hconfi,env)
+    
+    env.GEMINI_DOCUMENT_ROOT   = cwd
     env.GEMINI_SCRIPT_FILENAME = program
     env.GEMINI_URL_PATH        = location.path
+    env.GEMINI_URL             = uurl.toa(location)
     env.GATEWAY_INTERFACE      = "CGI/1.1"
     env.QUERY_STRING           = location.query or ""
     env.REMOTE_ADDR            = auth._remote
@@ -360,16 +396,10 @@ return function(auth,program,location)
       env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
     end
     
-    if conf.http     then add_http()              end
-    if conf.apache   then add_apache()            end
-    if conf.envtls   then add_tlsenv(conf.apache) end
-    
-    if cwd then
-      local okay,err2 = fsys.chdir(cwd)
-      if not okay then
-        syslog('error',"CGI cwd(%q) = %s",cwd,errno[err2])
-        process.exit(exit.CONFIG)
-      end
+    local okay,err2 = fsys.chdir(cwd)
+    if not okay then
+      syslog('error',"CGI cwd(%q) = %s",cwd,errno[err2])
+      process.exit(exit.CONFIG)
     end
     
     process.exec(prog,args,env)

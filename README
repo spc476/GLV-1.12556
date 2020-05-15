@@ -14,6 +14,7 @@ Features:
 	* Gemini-specific CGI scripts
 	* HTTP-specific CGI scripts
 * Support for user directories
+* Support for vitual hosting (multiple domains)
 * Authentication by client certificates
 * Easily extensible with support for custom handlers
 * Configuration via file

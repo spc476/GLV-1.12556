@@ -19,8 +19,7 @@
 --    Comments, questions and criticisms can be sent to: sean@conman.org
 --
 -- ************************************************************************
--- luacheck: globals certificate network syslog redirect
--- luacheck: globals cgi modules cmodules handlers
+-- luacheck: globals certificate network syslog cgi hosts
 -- luacheck: ignore 611
 
 -- ************************************************************************
@@ -34,14 +33,13 @@ certificate =
 }
 
 -- ************************************************************************
--- Network definition block, required
+-- Network definition block, optional
 -- ************************************************************************
 
 network =
 {
-  host = "example.com", -- hostname of the server
-  addr = "0.0.0.0",     -- optional, interface to listen on, IPv6 supported
-  port = 1965,          -- optional, port to listen on.
+  addr = "0.0.0.0", -- optional, interface to listen on, IPv6 supported
+  port = 1965,      -- optional, port to listen on.
 }
 
 -- ************************************************************************
@@ -52,152 +50,6 @@ syslog =
 {
   ident    = 'gemini', -- ID of server
   facility = 'daemon', -- syslog facility to log under
-}
-
--- ************************************************************************
--- Authorization, optional
---
--- Apply authorization to various paths.  The path patterns are applied
--- in order, and first match wins.
--- ************************************************************************
-
---[[
-authorization =
-{
-  {
-    -- -----------------------------------------------------------------
-    -- If the pattern matches the query path, apply the authrentication
-    -- -----------------------------------------------------------------
-    
-    path   = "^/private",
-    
-    -- ---------------------------------------------------------
-    -- The return status if the check fails.  The values are:
-    --
-    -- 60 - Client certificate required
-    -- 61 - Transient client certificate required
-    -- 62 - Authorized client certificate required
-    --
-    -- 60 is the default value if not specified
-    -- ---------------------------------------------------------
-    
-    status = 62,
-    
-    -- ------------------------------------------------------------------
-    -- Function to check the certificate.  It's given the issuer
-    -- information, the subject information and the broken down request.
-    -- ------------------------------------------------------------------
-    
-    check  = function(issuer,subject,location)
-      return location.query
-         and isser.CN == "Conman Laboratories CA"
-         and subject.CN
-    end,
-  },
---]]
-
--- ************************************************************************
--- Redirect definition block, optional
---
--- Before any handlers or files are checked, requests are filtered through
--- these redirection blocks.  The temporary block is for temporary
--- redirects, and the permanent block is for permanent redirects.  The first
--- element of each entry is the pattern that is tried against the request,
--- and if matched, the value is served up as the redirected location.
---
--- Pattern captures can be referenced in the value, "$1" will be replaced
--- with the first such capture, "$2" with the second capture, and so on.
---
--- The gone block is for requests that once existed, but no more.  This is
--- just a list of patterns to be matched against, any match will serve up a
--- resource gone status.
--- ************************************************************************
-
---[[
-redirect =
-{
-  temporary =
-  {
-    { '^/example1/(.*)' , "/new-location/$1" } ,
-  },
-  
-  permanent =
-  {
-    { '^/example2/(contents)/(.*)' , "gemini://example.net/$1/$2" } ,
-  },
-  
-  gone =
-  {
-    '^/example3(.*)'
-  }
-}
---]]
-
-
--- ************************************************************************
--- Handlers, mostly optional
---
--- These handle all requests, and are used after all redirections are checked.
--- The configuration options are entirely dependant upon the handler---the
--- only required configuration options per handler are the 'path' field and
--- the 'module' field, which defines the codebase for the handler.  The
--- path fields are checked in the order as they appear in this list, and the
--- first one wins.
--- ************************************************************************
-
-handlers =
-{
-  -- ----------------------
-  -- Sample handler code---optional.  Only here to show the skeleton of
-  -- a handler.  Can be safely removed.
-  -- ----------------------
-  
-  --[[
-  {
-    path   = '^/sample/(.*)',
-    module = "GLV-1.handlers.sample",
-  },
-  --]]
-
-  -- ------------------------------------
-  -- Handles public user directories
-  -- ------------------------------------
-  
-  --[[
-  {
-    path      = '^/%~([^/]+)(/.*)',
-    module    = "GLV-1.handlers.userdir",
-    directory = "public_gemini", -- optional, default value
-    index     = "index.gemini",  -- optional, default value
-    extension = ".gemini",       -- optional, default value
-    no_access = -- optional, see below
-    {
-      "^%.",  -- no to any dot files
-    },
-  },
-  --]]
-  
-  -- --------------------------------------
-  -- Handles requests from a directory.
-  -- --------------------------------------
-  
-  {
-    path      = ".*",
-    module    = "GLV-1.handlers.filesystem",
-    directory = "/var/gemini",
-    index     = "index.gemini", -- optional, default value
-    extension = '.gemini',      -- optional, default value
-    
-    -- -----------------------------------------------------------------
-    -- Optional, filter out filenames with the following patterns.  If
-    -- not given, then by default, filter out files starting with a '.'
-    -- -----------------------------------------------------------------
-    
-    no_access = -- optional
-    {
-      "^%.",  -- no to any dot files
-    },
-  },
 }
 
 -- ************************************************************************
@@ -217,7 +69,7 @@ handlers =
 -- REMOTE_HOST          IP address of the client (allowed in RFC-3875)
 -- REQUEST_METHOD       Will be empty, as there are no requests types
 -- SCRIPT_NAME          Name of the script per the URL path
--- SERVER_NAME          Per network.host
+-- SERVER_NAME          Per host
 -- SERVER_PORT          Per network.port
 -- SERVER_PROTOCOL      Will be set to "GEMINI"
 -- SRVER_SOFTWARE       Will be set to "GLV-1.12556/1"
@@ -267,9 +119,9 @@ handlers =
 -- SSL_CLIENT_V_REMAIN          aka TLS_CLIENT_REMAIN
 -- SSL_TLS_SNI                  aka SERVER_NAME
 --
+-- Settings can be overwritten per site and per script.
 -- ************************************************************************
 
---[[
 cgi =
 {
   -- -----------------------------------------------------------------
@@ -290,8 +142,8 @@ cgi =
   
   env =
   {
-    PATH           = "/usr/local/bin:/usr/bin:/bin",
-    LANG           = "en_US.UTF-8",
+    PATH = "/usr/local/bin:/usr/bin:/bin",
+    LANG = "en_US.UTF-8",
   },
   
   -- http   = true, -- only define if all CGI scripts are web based
@@ -311,8 +163,8 @@ cgi =
     
     ['^/private/index.gemini$'] =
     {
-      cwd = '/var/private' -- again, different cwd
-      envtls = true,       -- we WANT TLS env vars for this
+      cwd = '/var/private', -- again, different cwd
+      envtls = true,        -- we WANT TLS env vars for this
     },
     
     ['^/sampleCGI/.*'] =
@@ -326,4 +178,208 @@ cgi =
     },
   }
 }
---]]
+
+-- ************************************************************************
+-- Virtual hosts.  At least one needs to be defined, and at least one
+-- handler per host needs to be defined as well.
+-- ************************************************************************
+
+hosts =
+{
+  ['example.com'] =
+  {
+    -- ********************************************************************
+    -- Authorization, optional
+    --
+    -- Apply authorization to various paths.  The path patterns are applied
+    -- in order, and first match wins.
+    -- ********************************************************************
+    
+    authorization =
+    {
+      {
+        -- -----------------------------------------------------------------
+        -- If the pattern matches the query path, apply the authrentication
+        -- -----------------------------------------------------------------
+        
+        path   = "^/private",
+        
+        -- ---------------------------------------------------------
+        -- The return status if the check fails.  The values are:
+        --
+        -- 60 - Client certificate required
+        -- 61 - Transient client certificate required
+        -- 62 - Authorized client certificate required
+        --
+        -- 60 is the default value if not specified
+        -- ---------------------------------------------------------
+        
+        status = 62,
+        
+        -- ------------------------------------------------------------------
+        -- Function to check the certificate.  It's given the issuer
+        -- information, the subject information and the broken down request.
+        -- ------------------------------------------------------------------
+        
+        check  = function(issuer,subject,location)
+          return location.query
+             and issuer.CN == "Conman Laboratories CA"
+             and subject.CN
+        end,
+      },
+    },
+    
+    -- ********************************************************************
+    -- Redirect definition block, optional
+    --
+    -- Before any handlers or files are checked, requests are filtered
+    -- through these redirection blocks.  The temporary block is for
+    -- temporary redirects, and the permanent block is for permanent
+    -- redirects.  The first element of each entry is the pattern that is
+    -- tried against the request, and if matched, the value is served up as
+    -- the redirected location.
+    --
+    -- Pattern captures can be referenced in the value, "$1" will be
+    -- replaced with the first such capture, "$2" with the second capture,
+    -- and so on.
+    --
+    -- The gone block is for requests that once existed, but no more.  This
+    -- is just a list of patterns to be matched against, any match will
+    -- serve up a resource gone status.
+    -- ********************************************************************
+    
+    redirect =
+    {
+      temporary =
+      {
+        { '^/example1/(.*)' , "/new-location/$1" } ,
+      },
+      
+      permanent =
+      {
+        { '^/example2/(contents)/(.*)' , "gemini://example.net/$1/$2" } ,
+      },
+      
+      gone =
+      {
+        '^/example3(.*)'
+      }
+    },
+    
+    -- ********************************************************************
+    -- Handlers, mostly optional
+    --
+    -- These handle all requests, and are used after all redirections are
+    -- checked.  The configuration options are entirely dependant upon the
+    -- handler---the only required configuration options per handler are the
+    -- 'path' field and the 'module' field, which defines the codebase for
+    -- the handler.  The path fields are checked in the order as they appear
+    -- in this list, and the first one wins.
+    -- ********************************************************************
+    
+    handlers =
+    {
+      -- ----------------------
+      -- Sample handler code---optional.  Only here to show the skeleton of
+      -- a handler.  Can be safely removed.
+      -- ----------------------
+      
+      {
+        path   = '^/sample/(.*)',
+        module = "GLV-1.handlers.sample",
+      },
+      
+      -- ------------------------------------
+      -- Handles public user directories
+      -- ------------------------------------
+      
+      {
+        path      = '^/%~([^/]+)(/.*)',
+        module    = "GLV-1.handlers.userdir",
+        directory = "public_gemini", -- optional, default value
+        index     = "index.gemini",  -- optional, default value
+        extension = ".gemini",       -- optional, default value
+        no_access = -- optional, see below
+        {
+          "^%.",  -- no to any dot files
+        },
+      },
+      
+      -- --------------------------------------
+      -- Handles requests from a directory.
+      -- --------------------------------------
+      
+      {
+        path      = ".*",
+        module    = "GLV-1.handlers.filesystem",
+        directory = "/var/example.com/share",
+        index     = "index.gemini", -- optional, default value
+        extension = '.gemini',      -- optional, default value
+        
+        -- -----------------------------------------------------------------
+        -- Optional, filter out filenames with the following patterns.  If
+        -- not given, then by default, filter out files starting with a '.'
+        -- -----------------------------------------------------------------
+        
+        no_access = -- optional
+        {
+          "^%.",  -- no to any dot files
+        },
+      },
+    },
+    
+    -- ********************************************************************
+    -- We can override the CGI settings per host.  If you don't want a host
+    -- to use CGI, just set this field to false.
+    -- ********************************************************************
+    
+    cgi =
+    {
+      cwd = "/var/example.com/tmp",
+      
+      -- ------------------------------------------------------------
+      -- We can add some additional environment variables or overwrite
+      -- some previously set variables.
+      -- -------------------------------------------------------------
+      
+      env =
+      {
+        TZ   = "America/New York",    -- set one
+        PATH = "/var/example.com/bin" -- override
+      },
+      
+      instance =
+      {
+        ['^/private/raw.*'] =
+        {
+          cwd = "/tmp",
+          env =
+          {
+            LD_PRELOAD = "/var/example.com/lib/debug.so",
+          },
+        },
+        
+        ['.*'] =
+        {
+          http   = true,
+          apache = true,
+        },
+      },
+    },
+  },
+  
+  -- ********************************************************************
+  -- An example of a second host that does NOT support CGI.
+  -- ********************************************************************
+  
+  ['example.org'] =
+  {
+    cgi = false,
+    handlers =
+    {
+      path = ".*",
+      module = "GLV-1.handlers.filesystem",
+      directory = "/var/exmple.org/share",
+    }
+  }
+}
