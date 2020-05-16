@@ -19,31 +19,11 @@
 --    Comments, questions and criticisms can be sent to: sean@conman.org
 --
 -- ************************************************************************
--- luacheck: globals certificate network syslog cgi hosts
+-- luacheck: globals syslog address cgi hosts
 -- luacheck: ignore 611
 
 -- ************************************************************************
--- Certificate definition block, required.
--- ************************************************************************
-
-certificate =
-{
-  cert = "cert.pem", -- certificate
-  key  = "key.pem",  -- certificate key
-}
-
--- ************************************************************************
--- Network definition block, optional
--- ************************************************************************
-
-network =
-{
-  addr = "0.0.0.0", -- optional, interface to listen on, IPv6 supported
-  port = 1965,      -- optional, port to listen on.
-}
-
--- ************************************************************************
--- syslog() definition block, optional
+-- syslog() definition block, optional, default values
 -- ************************************************************************
 
 syslog =
@@ -53,7 +33,31 @@ syslog =
 }
 
 -- ************************************************************************
--- CGI definition block, optional
+-- address---define the default address, default value
+--
+-- This should work fine on all systems, creating a listening socket bound
+-- to all active interfaces.  If you only have IPv4, use "0.0.0.0:1965" to
+-- bind to all active interfaces.  This can be a specific address if you
+-- don't want to bind all active interfaces.
+--
+-- You do need to specify both the address (and it can be a hostname) AND
+-- the port number.  If either is missing, then an error will be raised and
+-- the program will not run.  The values here, both address and port, will
+-- become the default values if not specified in the hosts block.
+--
+-- WARNING:  beware of using a default address and binding to specific
+-- addresses in some hosts---either use the default address only, or specify
+-- an address for every host.  Trying to mix the two may lead to anger, and
+-- anger leads to hate, and hate leads to suffering.  Don't be lead to
+-- suffering.
+--
+-- You have been warned.
+-- ************************************************************************
+
+address = "[::]:1965"
+
+-- ************************************************************************
+-- CGI definition block, optional, no default values
 --
 -- Any file found with the executable bit set is considered a CGI script and
 -- will be executed as such.  This module implements the CGI standard as
@@ -180,16 +184,61 @@ cgi =
 }
 
 -- ************************************************************************
--- Virtual hosts.  At least one needs to be defined, and at least one
--- handler per host needs to be defined as well.
+-- Virtual hosts, mandatory, at least one host defined.
 -- ************************************************************************
 
 hosts =
 {
   ['example.com'] =
   {
+    -- -----------------------------------------------------------------
+    -- You can specify the address in a few ways:
+    --
+    -- Nothing, in which case a default address and port are used.
+    --
+    -- address = 'example.com'
+    --			A hostname can be specified.  The default port
+    --			will be 1965 (although see the above section
+    --			about the default address)
+    --
+    -- address = 'example.com:21965'
+    --			Set both the host and the port number.
+    --
+    -- address = ':21965'
+    --			This will use the default address, but change the
+    --			port number.
+    --
+    -- address = '@'
+    --			This will set the host to the host currently
+    --			being defined.  This is a shortcut to cut down
+    --			on typing (and possibly making a mistake).
+    --
+    -- address = '@:21965'
+    --			Use the host currently being defined, but specify
+    --			the port number.
+    --
+    -- address = '192.168.1.10'
+    --			You can specify IP addresses.
+    --
+    -- address = '192.168.1.10:21965'
+    --			IP address and port number.
+    --
+    -- address = '[fc00::3]'
+    --			Also IPv6 addresses.
+    --
+    -- address = '[fc00::3]:21965'
+    --			IPv6 address and port number.
+    --
+    -- NOTE:	The use of '@' will involve a DNS request to resovle the
+    --		address.
+    -- -----------------------------------------------------------------
+    
+    address     = '@',
+    certificate = "cert-example.com.pem",  -- mandatory
+    keyfile     = "key-example.com.pem",   -- mandatory
+    
     -- ********************************************************************
-    -- Authorization, optional
+    -- Authorization, optional, no default values
     --
     -- Apply authorization to various paths.  The path patterns are applied
     -- in order, and first match wins.
@@ -230,7 +279,7 @@ hosts =
     },
     
     -- ********************************************************************
-    -- Redirect definition block, optional
+    -- Redirect definition block, optional, no default values
     --
     -- Before any handlers or files are checked, requests are filtered
     -- through these redirection blocks.  The temporary block is for
@@ -267,21 +316,21 @@ hosts =
     },
     
     -- ********************************************************************
-    -- Handlers, mostly optional
+    -- Handlers, mandatory, at least one handler defined
     --
     -- These handle all requests, and are used after all redirections are
     -- checked.  The configuration options are entirely dependant upon the
     -- handler---the only required configuration options per handler are the
     -- 'path' field and the 'module' field, which defines the codebase for
     -- the handler.  The path fields are checked in the order as they appear
-    -- in this list, and the first one wins.
+    -- in this list, and the first match wins.
     -- ********************************************************************
     
     handlers =
     {
       -- ----------------------
-      -- Sample handler code---optional.  Only here to show the skeleton of
-      -- a handler.  Can be safely removed.
+      -- Sample handler code.  Only here to show the skeleton
+      -- of a handler.  Can be safely removed.
       -- ----------------------
       
       {
@@ -374,12 +423,18 @@ hosts =
   
   ['example.org'] =
   {
-    cgi = false,
+    address     = '@',
+    certificate = "cert-example.org.pem",
+    keyfile     = "key-example.org.pem",
+    
+    cgi      = false,
     handlers =
     {
-      path = ".*",
-      module = "GLV-1.handlers.filesystem",
-      directory = "/var/exmple.org/share",
+      {
+        path      = ".*",
+        module    = "GLV-1.handlers.filesystem",
+        directory = "/var/exmple.org/share",
+      }
     }
   }
 }

@@ -29,6 +29,7 @@ local fsys      = require "org.conman.fsys"
 local magic     = require "org.conman.fsys.magic"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
+local ip        = require "org.conman.parsers.ip-text"
 local lpeg      = require "lpeg"
 local url       = require "org.conman.parsers.url" * lpeg.P(-1)
 local MSG       = require "GLV-1.MSG"
@@ -36,6 +37,20 @@ local MSG       = require "GLV-1.MSG"
 local CONF = {}
 
 magic:flags("mime")
+
+-- ************************************************************************
+
+local parse_address do
+  local C = lpeg.C
+  local P = lpeg.P
+  local R = lpeg.R
+  
+  local host    = ip.IPv4
+                + P"[" * ip.IPv6 * P"]"
+                + C(R("!9",";~")^1)
+  local port    = P":" * (R"09"^1 / tonumber)
+  parse_address = host * port
+end
 
 -- ************************************************************************
 
@@ -63,18 +78,17 @@ do
   
   syslog.open(CONF.syslog.ident,CONF.syslog.facility)
   
-  if not CONF.certificate
-  or not CONF.certificate.cert
-  or not CONF.certificate.key then
-    syslog('critical',"%s: missing or bad certificate block",arg[1])
-    os.exit(exit.CONFIG,true)
-  end
-  
-  if not CONF.network then
-    CONF.network = { addr = "::" , port = 1965 }
+  if not CONF.address then
+    CONF.address = "[::]:1965"
+    CONF._host   = "[::]"
+    CONF._port   = 1965
   else
-    CONF.network.addr = CONF.network.addr or "::"
-    CONF.network.port = CONF.network.port or 1965
+    CONF._host,CONF._port = parse_address:match(CONF.address)
+    if not CONF._host or not CONF._port then
+      syslog('critical',"%s: syntax error with address",arg[1])
+      os.exit(exit.CONFIG,true)
+    end
+    syslog('debug',"host=%s port=%d",CONF._host,CONF._port)
   end
   
   if not CONF.hosts then
@@ -82,10 +96,60 @@ do
     os.exit(exit.CONFIG,true)
   end
   
-  local hashost = false
+  -- ----------------------------------------------------------------------
+  -- This expression will canonicalize the address field.  If the host is
+  -- missing, it will be replaced with the "all" address.  If the port is
+  -- missing, it will be replaced with the default port 1965.  If the host
+  -- is '@', it will be replaced by the name of the host.
+  -- ----------------------------------------------------------------------
+  
+  local canon_address do
+    local Carg = lpeg.Carg
+    local Cc   = lpeg.Cc
+    local Cs   = lpeg.Cs
+    local P    = lpeg.P
+    local R    = lpeg.R
+    
+    local host    = ip.IPv4
+                  + P"[" * ip.IPv6 * P"]"
+                  + P"@" / "" * Carg(1)
+                  + R("!9",";~")^1
+                  + Cc(CONF._host)
+    local port    = P":" * R"09"^1
+                  + Cc(":" .. CONF._port)
+    canon_address = Cs(host * port)
+  end
+  
+  CONF._interfaces = {}
   
   for host,conf in pairs(CONF.hosts) do
-    hashost = true
+    if not conf.certificate then
+      syslog('error',"%s: host %q missing certifiate---can't configure host",arg[1],host)
+    end
+    
+    if not conf.keyfile then
+      syslog('error',"%s: host %q missing keyfile---can't configure host",arg[1],host)
+    end
+    
+    local addr = conf.address and canon_address:match(conf.address,1,host)
+                 or CONF.address
+                 
+    if conf.certificate and conf.keyfile then
+      local info
+      
+      if not CONF._interfaces[addr] then
+        info = {}
+        CONF._interfaces[addr] = info
+      else
+        info = CONF._interfaces[addr]
+      end
+      
+      table.insert(info,{
+                cert     = conf.certificate ,
+                key      = conf.keyfile ,
+                hostinfo = conf ,
+        })
+    end
     
     if not conf.authorization then
       conf.authorization = {}
@@ -169,8 +233,8 @@ do
     syslog('info',"host %q configured",host)
   end
   
-  if not hashost then
-    syslog('critical',"%s: at least one host needs to be defined",arg[1])
+  if not next(CONF._interfaces) then
+    syslog('critical',"%s: at least one host needs to be configured",arg[1])
     os.exit(exit.CONFIG,true)
   end
   
@@ -284,7 +348,10 @@ local function main(ios)
   
   if loc.scheme ~= 'gemini'
   or not CONF.hosts[loc.host]
-  or loc.port   ~= CONF.network.port then
+  or loc.port   ~= CONF.hosts[loc.host].port then
+  
+    syslog('debug',"scheme=%q host=%q info=%s",loc.scheme,loc.host,tostring(CONF.hosts[loc.host]))
+    syslog('debug',"loc.port=%d CONF.port=%s",loc.port,CONF.hosts[loc.host].port or "")
     log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
@@ -425,17 +492,36 @@ end
 
 -- ************************************************************************
 
-local okay,err = tls.listen(CONF.network.addr,CONF.network.port,main,function(conf)
-  conf:verify_client_optional()
-  conf:insecure_no_verify_cert()
-  return conf:cert_file(CONF.certificate.cert)
-     and conf:key_file (CONF.certificate.key)
-     and conf:protocols("all")
-end)
+local function init_interface(interface,info)
+  local addr,port = parse_address:match(interface)
+  
+  local okay,err = tls.listen(addr,port,main,function(conf)
+    conf:verify_client_optional()
+    conf:insecure_no_verify_cert()
+    
+    info[1].hostinfo.port = port
+    if not conf:keypair_file(info[1].cert,info[1].key) then return false end
+    
+    for i = 2 , #info do
+      info[i].hostinfo.port = port
+      if not conf:add_keypair_file(info[i].cert,info[i].key) then
+        return false
+      end
+    end
+    
+    return conf:protocols "all"
+  end)
+  
+  if not okay then
+    io.stderr:write(string.format("%s: %s\n",arg[1],err))
+    os.exit(exit.OSERR,true)
+  end
+end
 
-if not okay then
-  io.stderr:write(string.format("%s: %s\n",arg[1],err))
-  os.exit(exit.OSERR,true)
+-- ************************************************************************
+
+for interface,info in pairs(CONF._interfaces) do
+  init_interface(interface,info)
 end
 
 signal.catch('int')

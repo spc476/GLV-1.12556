@@ -25,26 +25,22 @@
 -- handler to serve up files.
 --
 -- ************************************************************************
--- luacheck: globals certificate hosts
+-- luacheck: globals hosts
 -- luacheck: ignore 611
-
-certificate =
-{
-  cert = "cert.pem",
-  key  = "key.pem",
-}
 
 hosts =
 {
   ["example.com"] =
   {
-    handlers =
+    certificate = "cert.pem",
+    keyfile     = "key.pem",
+    handlers    =
     {
       {
         path      = ".*",
         module    = "GLV-1.handlers.filesystem",
-        directory = "share", -- change as needed
-      },
-    },
-  },
+        directory = "share" -- change as needed
+      }
+    }
+  }
 }
