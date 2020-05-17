@@ -177,7 +177,7 @@ do
       conf.handlers = {}
     else
       local function notfound()
-        return 404,"Not found",""
+        return 51,MSG[51],""
       end
       
       local function loadmod(info)
