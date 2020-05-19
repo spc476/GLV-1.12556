@@ -88,7 +88,6 @@ do
       syslog('critical',"%s: syntax error with address",arg[1])
       os.exit(exit.CONFIG,true)
     end
-    syslog('debug',"host=%s port=%d",CONF._host,CONF._port)
   end
   
   if not CONF.hosts then
@@ -349,9 +348,6 @@ local function main(ios)
   if loc.scheme ~= 'gemini'
   or not CONF.hosts[loc.host]
   or loc.port   ~= CONF.hosts[loc.host].port then
-  
-    syslog('debug',"scheme=%q host=%q info=%s",loc.scheme,loc.host,tostring(CONF.hosts[loc.host]))
-    syslog('debug',"loc.port=%d CONF.port=%s",loc.port,CONF.hosts[loc.host].port or "")
     log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
     ios:close()
     return
