@@ -55,7 +55,8 @@ end
 
 -- ************************************************************************
 
-local function main(location,usecert)
+local function main(location,usecert,rcount)
+  rcount = rcount or 1
   local loc = url:match(location)
   
   if not loc then
@@ -124,13 +125,16 @@ local function main(location,usecert)
     end
     
   elseif system == 'redirect' then
-    local where  = url:match(info)
-    local new    = uurl.merge(loc,where)
-    local newloc = uurl.toa(new)
+    if rcount == 5 then
+      io.stderr:write(string.format("too man redirects\n"))
+    else
+      local where  = url:match(info)
+      local new    = uurl.merge(loc,where)
+      local newloc = uurl.toa(new)
     
-    io.stderr:write("--- ",newloc,"\n")
-    return main(newloc,usecert)
-    
+      io.stderr:write("--- ",newloc,"\n")
+      return main(newloc,usecert,rcount + 1)
+    end
   elseif system == 'okay' then
     io.stdout:write(ios:read("*a"))
   end

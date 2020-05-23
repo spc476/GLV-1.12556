@@ -309,7 +309,7 @@ local function main(ios)
   
   local request = ios:read("*l")
   if not request then
-    log(ios,59,"",reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,"",reply(ios,"59 ",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -319,14 +319,14 @@ local function main(ios)
   -- -------------------------------------------------
   
   if #request > 1024 then
-    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
     ios:close()
     return
   end
   
   local loc = url:match(request)
   if not loc then
-    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -340,7 +340,7 @@ local function main(ios)
   end
   
   if not loc.host then
-    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -348,7 +348,7 @@ local function main(ios)
   if loc.scheme ~= 'gemini'
   or not CONF.hosts[loc.host]
   or loc.port   ~= CONF.hosts[loc.host].port then
-    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -361,7 +361,7 @@ local function main(ios)
   -- ---------------------------------------------------------------
   
   if loc.path:match "/%.%./" or loc.path:match "/%./" or loc.path:match "//+" then
-    log(ios,59,request,reply(ios,"59\t",MSG[59],"\r\n"))
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
     ios:close()
     return
   end
@@ -383,7 +383,7 @@ local function main(ios)
     if loc.path:match(rule.path) then
       if not ios.__ctx:peer_cert_provided() then
         local ret = rule.status or 60
-        log(ios,ret,request,reply(ios,ret,"\t",MSG[ret],"\r\n"))
+        log(ios,ret,request,reply(ios,ret," ",MSG[ret],"\r\n"))
         ios:close()
         return
       end
@@ -399,13 +399,13 @@ local function main(ios)
       auth.now       = os.time()
       
       if auth.now < auth.notbefore then
-        log(ios,64,request,reply(ios,"64\t",MSG[64],"\r\n"),auth)
+        log(ios,64,request,reply(ios,"64 ",MSG[64],"\r\n"),auth)
         ios:close()
         return
       end
       
       if auth.now > auth.notafter then
-        log(ios,65,request,reply(ios,"65\t",MSG[65],"\r\n"),auth)
+        log(ios,65,request,reply(ios,"65 ",MSG[65],"\r\n"),auth)
         ios:close()
         return
       end
@@ -413,13 +413,13 @@ local function main(ios)
       local okay,allowed = pcall(rule.check,auth.issuer,auth.subject,loc)
       if not okay then
         syslog('error',"%s: %s",rule.path,allowed)
-        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),auth)
+        log(ios,40,request,reply(ios,"40 ",MSG[40],"\r\n"),auth)
         ios:close()
         return
       end
       
       if not allowed then
-        log(ios,63,request,reply(ios,"63\t",MSG[63],"\r\n"),auth)
+        log(ios,63,request,reply(ios,"63 ",MSG[63],"\r\n"),auth)
         ios:close()
         return
       end
@@ -438,7 +438,7 @@ local function main(ios)
     local match = table.pack(loc.path:match(rule[1]))
     if #match > 0 then
       local new = redirect_subst:match(rule[2],1,match)
-      log(ios,30,request,reply(ios,"30\t",new,"\r\n"),auth)
+      log(ios,30,request,reply(ios,"30 ",new,"\r\n"),auth)
       ios:close()
       return
     end
@@ -448,7 +448,7 @@ local function main(ios)
     local match = table.pack(loc.path:match(rule[1]))
     if #match > 0 then
       local new = redirect_subst:match(rule[2],1,match)
-      log(ios,31,request,reply(ios,"31\t",new,"\r\n"),auth)
+      log(ios,31,request,reply(ios,"31 ",new,"\r\n"),auth)
       ios:close()
       return
     end
@@ -456,7 +456,7 @@ local function main(ios)
   
   for _,pattern in ipairs(CONF.hosts[loc.host].redirect.gone) do
     if loc.path:match(pattern) then
-      log(ios,52,request,reply(ios,"52\t",MSG[52],"\r\n"),auth)
+      log(ios,52,request,reply(ios,"52 ",MSG[52],"\r\n"),auth)
       ios:close()
       return
     end
@@ -471,10 +471,10 @@ local function main(ios)
     if #match > 0 then
       local okay,status,mime,data = pcall(info.code.handler,info,auth,loc,match)
       if not okay then
-        log(ios,40,request,reply(ios,"40\t",MSG[40],"\r\n"),auth)
+        log(ios,40,request,reply(ios,"40 ",MSG[40],"\r\n"),auth)
         syslog('error',"request=%s error=%s",request,status)
       else
-        log(ios,status,request,reply(ios,status,"\t",mime,"\r\n",data),auth)
+        log(ios,status,request,reply(ios,status," ",mime,"\r\n",data),auth)
       end
       ios:close()
       return
@@ -482,7 +482,7 @@ local function main(ios)
   end
   
   syslog('error',"no handlers for %q found---possible configuration error?",request)
-  log(ios,41,request,reply(ios,"41\t",MSG[41],"\r\n"),auth)
+  log(ios,41,request,reply(ios,"41 ",MSG[41],"\r\n"),auth)
   ios:close()
 end
 
