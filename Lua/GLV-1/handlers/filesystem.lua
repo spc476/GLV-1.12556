@@ -30,6 +30,7 @@ local lpeg   = require "lpeg"
 local uurl   = require "GLV-1.url-util"
 local MSG    = require "GLV-1.MSG"
 local cgi    = require "GLV-1.cgi"
+local scgi   = require "GLV-1.scgi"
 local io     = require "io"
 local string = require "string"
 local table  = require "table"
@@ -123,7 +124,7 @@ function handler(conf,auth,loc,match)
     end
     
     local name = conf.directory .. "/" .. dir
-    local info,err = fsys.stat(name)
+    local info,err = fsys.lstat(name)
     
     if not info then
       syslog('error',"fsys.stat(%q) = %s",name,errno[err])
@@ -140,6 +141,8 @@ function handler(conf,auth,loc,match)
       end
     elseif info.mode.type == 'file' then
       return read_file(name)
+    elseif info.mode.type == 'link' then
+      return scgi(auth,name,conf.directory,loc)
     else
       return 51,MSG[51],""
     end
@@ -183,13 +186,15 @@ function handler(conf,auth,loc,match)
     end
     
     local fname = dir .. "/" .. entry
-    local info  = fsys.stat(fname)
+    local info  = fsys.lstat(fname)
     if not info then
       return false
     elseif info.mode.type == 'file' then
       return fsys.access(fname,"r"),'file'
     elseif info.mode.type == 'dir' then
       return fsys.access(fname,"x"),'dir'
+    elseif info.mode.type == 'link' then
+      return true,'file'
     else
       return false
     end

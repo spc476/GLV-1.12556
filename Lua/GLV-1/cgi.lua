@@ -29,7 +29,6 @@ local process   = require "org.conman.process"
 local exit      = require "org.conman.const.exit"
 local ios       = require "org.conman.net.ios"
 local nfl       = require "org.conman.nfl"
-local abnf      = require "org.conman.parsers.abnf"
 local lpeg      = require "lpeg"
 local io        = require "io"
 local os        = require "os"
@@ -38,79 +37,13 @@ local coroutine = require "coroutine"
 local math      = require "math"
 local uurl      = require "GLV-1.url-util"
 local MSG       = require "GLV-1.MSG"
+local gi        = require "GLV-1.gateway"
 
-local pairs     = pairs
 local tostring  = tostring
 local tonumber  = tonumber
 
 local DEVNULI = io.open("/dev/null","r")
 local DEVNULO = io.open("/dev/null","w")
-
--- ************************************************************************
-
-local parse_headers do
-  local Cc = lpeg.Cc
-  local Cf = lpeg.Cf
-  local Cg = lpeg.Cg
-  local Cs = lpeg.Cs
-  local Ct = lpeg.Ct
-  local C  = lpeg.C
-  local P  = lpeg.P
-  local R  = lpeg.R
-  local S  = lpeg.S
-  
-  local H do
-    local text = R("AZ","az") / function(c) return P(c:lower()) + P(c:upper()) end
-               + P(1)         / function(c) return P(c) end
-               
-    H = function(s)
-      local pattern = Cf(text^1,function(acc,pat) return acc * pat end)
-      return pattern:match(s) / s
-    end
-  end
-  
-  local LWSP         = (abnf.WSP + abnf.CRLF * abnf.WSP)
-  local text         = LWSP^1 / " "
-                     + abnf.VCHAR
-  local ignore       = LWSP + abnf.VCHAR
-  local code         = (R"16" * R"09" * #(P(1) - R"09")) / tonumber
-                     + (R"09" * R"09" * #(P(1) - R"09")) * Cc(50)
-                     -- ------------------------------------------
-                     -- Most common web status codes, translated
-                     -- ------------------------------------------
-                     
-                     + P"200" * Cc(20)
-                     + P"301" * Cc(31)
-                     + P"302" * Cc(30)
-                     + P"400" * Cc(59)
-                     + P"403" * Cc(60)
-                     + P"404" * Cc(51)
-                     + P"405" * Cc(59)
-                     + P"500" * Cc(40)
-                     + P"501" * Cc(40)
-                     
-                     -- ----------------
-                     -- Web catch all
-                     -- ----------------
-                     
-                     + P"2" * R"09" * R"09" * Cc(20)
-                     + P"3" * R"09" * R"09" * Cc(30)
-                     + P"4" * R"09" * R"09" * Cc(50)
-                     + P"5" * R"09" * R"09" * Cc(40)
-                     + R"09" * R"09" * R"09" * Cc(50)
-  local separator    = S'()<>@,;:\\"/[]?={}\t '
-  local token        = (abnf.VCHAR - separator)^1
-  local status       = H"Status"       * P":" * LWSP * code * ignore^0 * abnf.CRLF
-  local content_type = H"Content-Type" * P":" * LWSP * Cs(text^1)        * abnf.CRLF
-  local location     = H"Location"     * P":" * LWSP * C(abnf.VCHAR^1)   * abnf.CRLF
-  local generic      = C(token)        * P":" * LWSP * C(text^0)         * abnf.CRLF
-  local headers      = status + content_type + location + generic
-  parse_headers      = Cf(Ct"" * Cg(headers)^1,function(acc,name,value)
-                         acc[name] = value
-                         return acc
-                       end)
-                     * abnf.CRLF
-end
 
 -- ************************************************************************
 -- Handle script command line arguments per RFC-3875 section 4.4
@@ -171,8 +104,8 @@ end
 -- ************************************************************************
 
 return function(auth,program,directory,location)
-  local sconf = require "CONF".cgi or {}
-  local hconf = require "CONF".hosts[location.host].cgi or {}
+  local sconf = require "CONF".cgi
+  local hconf = require "CONF".hosts[location.host].cgi
   
   -- ------------------------------------------------------------------------
   -- If the cgi block is not defined for the server, nor for a host, and we
@@ -244,6 +177,9 @@ return function(auth,program,directory,location)
       pipe.read:close()
     end
     
+    sconf = sconf or {}
+    hconf = hconf or {}
+    
     local args = parse_cgi_args:match(location.query or "") or {}
     local env  = {}
     local prog
@@ -254,20 +190,10 @@ return function(auth,program,directory,location)
       prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
     end
     
-    local function merge_env(accenv,menv)
-      if menv then
-        for var,val in pairs(menv) do
-          accenv[var] = val
-        end
-      end
-    end
-    
-    merge_env(env,sconf.env)
-    merge_env(env,hconf.env)
-    
     -- ===================================================
     
     local function add_http()
+      syslog('debug',"ADDING HTTP")
       env.REQUEST_METHOD       = "GET"
       env.SERVER_PROTOCOL      = "HTTP/1.0"
       env.HTTP_ACCEPT          = "*/*"
@@ -290,12 +216,6 @@ return function(auth,program,directory,location)
     -- ===================================================
     
     local function add_tlsenv(apache)
-      local function breakdown(base,fields)
-        for name,value in pairs(fields) do
-          env[base .. name] = value
-        end
-      end
-      
       if not auth._provided then return end
       
       local remain = tostring(math.floor(os.difftime(auth.notafter,auth.now) / 86400))
@@ -310,8 +230,8 @@ return function(auth,program,directory,location)
         env.TLS_CLIENT_NOT_AFTER  = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notafter)
         env.TLS_CLIENT_REMAIN     = remain
         
-        breakdown("TLS_CLIENT_ISSUER_", auth.issuer)
-        breakdown("TLS_CLIENT_SUBJECT_",auth.subject)
+        gi.breakdown(env,"TLS_CLIENT_ISSUER_", auth.issuer)
+        gi.breakdown(env,"TLS_CLIENT_SUBJECT_",auth.subject)
         
         env.AUTH_TYPE   = 'Certificate'
         env.REMOTE_USER = env.TLS_CLIENT_SUBJECT_CN
@@ -325,8 +245,8 @@ return function(auth,program,directory,location)
         env.SSL_CLIENT_V_REMAIN = remain
         env.SSL_TLS_SNI         = location.host
         
-        breakdown("SSL_CLIENT_I_DN_",auth.issuer)
-        breakdown("SSL_CLIENT_S_DN_",auth.subject)
+        gi.breakdown(env,"SSL_CLIENT_I_DN_",auth.issuer)
+        gi.breakdown(env,"SSL_CLIENT_S_DN_",auth.subject)
         
         env.AUTH_TYPE   = 'Certificate'
         env.REMOTE_USER = env.SSL_CLIENT_S_DN_CN
@@ -335,53 +255,34 @@ return function(auth,program,directory,location)
     
     -- ===================================================
     
-    local function get_instance(list)
-      if list then
-        for name,info in pairs(list) do
-          if location.path:match(name) then
-            return info
-          end
-        end
-      end
-      return {}
-    end
-    
-    local function include_field(hci,hc,sci,sc)
-      if hci ~= nil then return hci end
-      if hc  ~= nil then return hc  end
-      if sci ~= nil then return sci end
-      return sc
-    end
-    
-    local sconfi = get_instance(sconf.instance)
-    local hconfi = get_instance(hconf.instance)
+    local sconfi = gi.get_instance(location,sconf.instance)
+    local hconfi = gi.get_instance(location,hconf.instance)
     local cwd    = hconfi.cwd or hconf.cwd or sconfi.cwd or sconf.cwd or directory
     
-    if (include_field(hconfi.http,hconf.http,sconfi.http,sconf.http))         then add_http()   end
-    if (include_field(hconfi.apache,hconf.apache,sconfi.apache,sconf.apache)) then add_apache() end
-    if (include_field(hconfi.envtls,hconf.envtls,sconfi.envtls,sconf.envtls)) then
+    gi.merge_env(env,sconf.env)
+    gi.merge_env(env,sconfi.env)
+    gi.merge_env(env,hconf.env)
+    gi.merge_env(env,hconfi.env)
+    
+    env.GEMINI_DOCUMENT_ROOT = cwd
+    env.GEMINI_URL_PATH      = location.path
+    env.GEMINI_URL           = uurl.toa(location)
+    env.GATEWAY_INTERFACE    = "CGI/1.1"
+    env.QUERY_STRING         = location.query or ""
+    env.REMOTE_ADDR          = auth._remote
+    env.REMOTE_HOST          = auth._remote
+    env.REQUEST_METHOD       = ""
+    env.SCRIPT_NAME          = program
+    env.SERVER_NAME          = location.host
+    env.SERVER_PORT          = tostring(location.port)
+    env.SERVER_PROTOCOL      = "GEMINI"
+    env.SERVER_SOFTWARE      = "GLV-1.12556/1"
+    
+    if (gi.isset(hconfi.http,hconf.http,sconfi.http,sconf.http))         then add_http()   end
+    if (gi.isset(hconfi.apache,hconf.apache,sconfi.apache,sconf.apache)) then add_apache() end
+    if (gi.isset(hconfi.envtls,hconf.envtls,sconfi.envtls,sconf.envtls)) then
       add_tlsenv(hconfi.apache or hconf.apache or sconfi.apache,sconf.apache)
     end
-    
-    merge_env(env,sconf.env)
-    merge_env(env,sconfi.env)
-    merge_env(env,hconf.env)
-    merge_env(env,hconfi,env)
-    
-    env.GEMINI_DOCUMENT_ROOT   = cwd
-    env.GEMINI_SCRIPT_FILENAME = program
-    env.GEMINI_URL_PATH        = location.path
-    env.GEMINI_URL             = uurl.toa(location)
-    env.GATEWAY_INTERFACE      = "CGI/1.1"
-    env.QUERY_STRING           = location.query or ""
-    env.REMOTE_ADDR            = auth._remote
-    env.REMOTE_HOST            = auth._remote
-    env.REQUEST_METHOD         = ""
-    env.SCRIPT_NAME            = program:sub(2,-1)
-    env.SERVER_NAME            = location.host
-    env.SERVER_PORT            = tostring(location.port)
-    env.SERVER_PROTOCOL        = "GEMINI"
-    env.SERVER_SOFTWARE        = "GLV-1.12556/1"
     
     -- -----------------------------------------------------------------------
     -- The passed in dir is a relative path starting with "./".  So when
@@ -393,7 +294,7 @@ return function(auth,program,directory,location)
     
     if pathinfo ~= "" then
       env.PATH_INFO       = pathinfo
-      env.PATH_TRANSLATED = fsys.getcwd() .. env.PATH_INFO
+      env.PATH_TRANSLATED = directory .. env.PATH_INFO
     end
     
     local okay,err2 = fsys.chdir(cwd)
@@ -425,21 +326,7 @@ return function(auth,program,directory,location)
   
   if info.status == 'normal' then
     if info.rc == 0 then
-      local headers = parse_headers:match(hdrs)
-      
-      if not headers then
-        syslog('error',"%s: is this a CGI program?",program)
-        return 40,MSG[40],""
-      end
-      
-      if headers['Location'] then
-        local status = headers['Status'] or 31
-        return status,headers['Location'],""
-      end
-      
-      local status  = headers['Status'] or 20
-      local mime    = headers['Content-Type'] or "text/plain"
-      return status,mime,data
+      return gi.handle_output(program,hdrs,data)
     else
       syslog('warning',"program=%q status=%d",program,info.rc)
       return 40,MSG[40],""

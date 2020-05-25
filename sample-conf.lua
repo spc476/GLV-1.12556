@@ -19,7 +19,7 @@
 --    Comments, questions and criticisms can be sent to: sean@conman.org
 --
 -- ************************************************************************
--- luacheck: globals syslog address cgi hosts
+-- luacheck: globals syslog address cgi scgi hosts
 -- luacheck: ignore 611
 
 -- ************************************************************************
@@ -65,6 +65,9 @@ address = "[::]:1965"
 -- sent to the Gemini client.  The following environment variables will be
 -- defined:
 --
+-- GEMINI_DOCUMENT_ROOT Top level directory of site (unless defined by cwd)
+-- GEMINI_URL_PATH      The path portion of the URL
+-- GEMINI_URL           The full URL of the request
 -- GATEWAY_INTERFACE    Will be set to "CGI/1.1"
 -- PATH_INFO            May be set (see RFC-3875 for details)
 -- PATH_TRANSLATED      May be set (see RFC-3875 for deatils)
@@ -73,8 +76,8 @@ address = "[::]:1965"
 -- REMOTE_HOST          IP address of the client (allowed in RFC-3875)
 -- REQUEST_METHOD       Will be empty, as there are no requests types
 -- SCRIPT_NAME          Name of the script per the URL path
--- SERVER_NAME          Per host
--- SERVER_PORT          Per network.port
+-- SERVER_NAME          Domain
+-- SERVER_PORT          Server connection port number
 -- SERVER_PROTOCOL      Will be set to "GEMINI"
 -- SRVER_SOFTWARE       Will be set to "GLV-1.12556/1"
 --
@@ -96,7 +99,7 @@ address = "[::]:1965"
 -- SCRIPT_FILENAME      The full path of the script being run
 --
 -- If a certificate is required to run the script, and it is so desired, the
--- following environment variables can be set:
+-- following environment variables will be set:
 --
 -- TLS_CIPHER                   Cipher being used
 -- TLS_VERSION                  Version of TLS being used
@@ -133,34 +136,31 @@ cgi =
   -- optional, and do not need to be defined.
   -- -----------------------------------------------------------------
   
-  -- ------------------------------------------------------------
-  -- All scripts will use this as the current working directory.
-  -- ------------------------------------------------------------
-  
-  cwd = "/tmp",
+  cwd    = "/tmp", -- all scripts will have this as the current working directory
+  http   = false,  -- (default value) use HTTP specific variables
+  apache = false,  -- (default value) use Aapche specific variables
+  envtls = false,  -- (default value) include details from TLS certificate
   
   -- ------------------------------------------------------------------
   -- Additional environment variables can be set.  The following list
-  -- is probably what would be nice to have.
+  -- is probably what would be nice to have (no default values).
   -- ------------------------------------------------------------------
   
   env =
   {
-    PATH = "/usr/local/bin:/usr/bin:/bin",
-    LANG = "en_US.UTF-8",
+    PATH    = "/usr/local/bin:/usr/bin:/bin",
+    LANG    = "en_US.UTF-8",
+    SETTING = "global",
   },
   
-  -- http   = true, -- only define if all CGI scripts are web based
-  -- apache = true, -- if you want Apache style environment variables
-  -- envtls = true, -- only define if you want all scripts to have TLS vars
-  
   -- -----------------------------------------------------------------
-  -- The instance block allow you to define values per CGI script.
+  -- The instance block allow you to define values per CGI script
+  -- (no default values).
   -- -----------------------------------------------------------------
   
   instance =
   {
-    ['^/private/raw.*'] =
+    ['^/private/foo/?.*'] =
     {
       cwd = '/var/tmp' -- different cwd
     },
@@ -178,8 +178,104 @@ cgi =
       env    = -- this is in addition to the ALL CGI env block
       {
         SAMPLE_CONFIG = "sample.conf",
+        SETTING       = "global-instance",
       }
     },
+  }
+}
+
+-- ************************************************************************
+-- SCGI definition block, optional, no default values
+--
+-- Any symbolic link found in the form of 'scgi://hostname:port' will be
+-- treated as a SCGI program, with the server connecting to the hostname on
+-- the given port.  This module implements the SCGI standard as defined in
+--
+-- https://web.archive.org/web/20020403050958/http://python.ca/nas/scgi/protocol.txt
+--
+-- There's not much there, but I have simplemented the following headers
+-- that are sent to the SCGI program:
+--
+-- CONTENT_LENGTH       Will be set to "0"
+-- SCGI                 Will be set to "1"
+-- GEMINI_DOCUMENT_ROOT Top level directory of site (unless defined by cwd)
+-- GEMINI_URL_PATH      The path portion of the URL
+-- GEMINI_URL           The full URL of the request
+-- PATH_INFO            May be set (see RFC-3875 for details)
+-- PATH_TRANSLATED      May be set (see RFC-3875 for deatils)
+-- QUERY_STRING         Will be set to the passed in query string, or ""
+-- REMOTE_ADDR          IP address of the client
+-- REMOTE_HOST          IP address of the client (allowed in RFC-3875)
+-- REQUEST_METHOD       Will be empty, as there are no requests types
+-- SCRIPT_NAME          Name of the script per the URL path
+-- SERVER_NAME          Domain
+-- SERVER_PORT          Server connection port number
+-- SERVER_PROTOCOL      Will be set to "GEMINI"
+-- SRVER_SOFTWARE       Will be set to "GLV-1.12556/1"
+
+-- In addition, scripts written for a webserver can also be used.  If such
+-- scripts are used, addtional headers will be set:
+--
+-- REQUEST_METHOD       Will be changed to "GET"
+-- SERVER_PROTOCOL      Will be changed to "HTTP/1.0"
+-- HTTP_ACCEPT          Will be set to "*/*"
+-- HTTP_ACCEPT_LANGUAGE Will be set to "*"
+-- HTTP_CONNECTION      Will be set to "close"
+-- HTTP_REFERER         Will be set to ""
+-- HTTP_USER_AGENT      Will be set to ""
+--
+-- If a certificate is required to run the script, and it is so desired, the
+-- following environment variables will be set:
+--
+-- TLS_CIPHER                   Cipher being used
+-- TLS_VERSION                  Version of TLS being used
+-- TLS_CLIENT_HASH              Hash of the certificate
+-- TLS_CLIENT_ISSUER            The x509 Issuer of the certificate
+-- TLS_CLIENT_ISSUER_*          The x509 Issuer subfields
+-- TLS_CLIENT_SUBJECT           The x509 Distinguished Name
+-- TLS_CLIENT_SUBJECT_*         Various Distinguished Name subfields
+-- TLS_CLIENT_NOT_BEFORE        Starting date of certificate
+-- TLS_CLIENT_NOT_AFTER         Ending date of certificate
+-- TLS_CLIENT_REMAIN            Number of days left for certificate
+--
+-- If the script is expecting Apache style environment variables, those
+-- can be set instead:
+--
+-- SSL_CIPHER                   aka TLS_CIPHER
+-- SSL_PROTOCOL                 aka TLS_VERSION
+-- SSL_CLIENT_I_DN              ala TLS_CLIENT_ISSUER
+-- SSL_CLIENT_I_DN_*            aka TLS_CLIENT_ISSUER_*
+-- SSL_CLIENT_S_DN              aka TLS_CLIENT_SUBJECT
+-- SSL_CLIENT_S_DN_*            aka TLS_CLIENT_SUBJECT_*
+-- SSL_CLIENT_V_START           aka TLS_CLIENT_NOT_BEFORE
+-- SSL_CLIENT_V_END             aka TLS_CLIENT_NOT_AFTER
+-- SSL_CLIENT_V_REMAIN          aka TLS_CLIENT_REMAIN
+-- SSL_TLS_SNI                  aka SERVER_NAME
+--
+-- Settings can be overwritten per site and per script.
+-- ************************************************************************
+
+scgi =
+{
+  -- -----------------------------------------------------------------
+  -- The following variables will apply to ALL SCGI interfaces.  All are
+  -- optional and do not need to be defined.
+  -- -----------------------------------------------------------------
+  
+  http   = false, -- (default value) use HTTP specific variables
+  envtls = false, -- (default value) include details from TLS certificate
+  
+  env =
+  {
+    SETTING = "global"
+  },
+  
+  instance =
+  {
+    ['^/private/bar/?.*'] =
+    {
+      env = { SETTING = "global-instance" },
+    }
   }
 }
 
@@ -393,18 +489,20 @@ hosts =
       
       env =
       {
-        TZ   = "America/New York",    -- set one
-        PATH = "/var/example.com/bin" -- override
+        TZ      = "America/New York",     -- set one
+        PATH    = "/var/example.com/bin", -- override
+        SETTING = "host",
       },
       
       instance =
       {
-        ['^/private/raw.*'] =
+        ['^/private/foo2/?.*'] =
         {
           cwd = "/tmp",
           env =
           {
             LD_PRELOAD = "/var/example.com/lib/debug.so",
+            SETTING   = "host-instance",
           },
         },
         
@@ -418,6 +516,24 @@ hosts =
   },
   
   -- ********************************************************************
+  -- We can override SCGI settings per host.  If you don't want a host to
+  -- use SCGI, just set this field to false.
+  -- ********************************************************************
+  
+  scgi =
+  {
+    env = { SETTING = 'host' },
+    instance =
+    {
+      ['^/private/bar2/?.*'] =
+      {
+        env = { SETTING = 'host-instance' },
+        envtls = true,
+      }
+    }
+  },
+  
+  -- ********************************************************************
   -- An example of a second host that does NOT support CGI.
   -- ********************************************************************
   
@@ -428,6 +544,7 @@ hosts =
     keyfile     = "key-example.org.pem",
     
     cgi      = false,
+    scgi     = false,
     handlers =
     {
       {
