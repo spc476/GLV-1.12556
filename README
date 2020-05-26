@@ -17,14 +17,15 @@ Features:
 	* Gemini-specific SCGI programs
 	* HTTP-specific SCGI programs
 * Support for user directories
+* Support for multiple directories per host
+* Support for serving up single files
 * Support for vitual hosting (multiple domains)
 * Authentication by client certificates
 * Easily extensible with support for custom handlers
-* Configuration via file
 
 Prerequisites:
 
-* Lua 5.3
+* Lua 5.3 (Lua 5.2 might work, but not fully tested)
 * Lpeg 1.0.0 or higher
 * LibreSSL 2.5.0 or higher
 * GNU libmagic (NOTE:  This is NOT image manipulation, but file
