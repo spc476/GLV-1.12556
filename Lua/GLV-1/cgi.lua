@@ -31,15 +31,12 @@ local ios       = require "org.conman.net.ios"
 local nfl       = require "org.conman.nfl"
 local lpeg      = require "lpeg"
 local io        = require "io"
-local os        = require "os"
 local string    = require "string"
 local coroutine = require "coroutine"
-local math      = require "math"
 local uurl      = require "GLV-1.url-util"
 local MSG       = require "GLV-1.MSG"
 local gi        = require "GLV-1.gateway"
 
-local tostring  = tostring
 local tonumber  = tonumber
 
 local DEVNULI = io.open("/dev/null","r")
@@ -177,129 +174,19 @@ return function(auth,program,directory,location)
       pipe.read:close()
     end
     
-    sconf = sconf or {}
-    hconf = hconf or {}
-    
     local args = parse_cgi_args:match(location.query or "") or {}
-    local env  = {}
-    local prog
-    
-    if program:match "^/" then
-      prog = uurl.rm_dot_segs:match(program)
-    else
-      prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
-    end
-    
-    -- ===================================================
-    
-    local function add_http()
-      syslog('debug',"ADDING HTTP")
-      env.REQUEST_METHOD       = "GET"
-      env.SERVER_PROTOCOL      = "HTTP/1.0"
-      env.HTTP_ACCEPT          = "*/*"
-      env.HTTP_ACCEPT_LANGUAGE = "*"
-      env.HTTP_CONNECTION      = "close"
-      env.HTTP_HOST            = location.host
-      env.HTTP_REFERER         = ""
-      env.HTTP_USER_AGENT      = ""
-    end
-    
-    -- ===================================================
-    
-    local function add_apache()
-      env.DOCUMENT_ROOT         = directory
-      env.CONTEXT_DOCUMENT_ROOT = env.DOCUMENT_ROOT
-      env.CONTEXT_PREFIX        = ""
-      env.SCRIPT_FILENAME       = prog
-    end
-    
-    -- ===================================================
-    
-    local function add_tlsenv(apache)
-      if not auth._provided then return end
-      
-      local remain = tostring(math.floor(os.difftime(auth.notafter,auth.now) / 86400))
-      
-      if not apache then
-        env.TLS_CIPHER            = auth._ctx:conn_cipher()
-        env.TLS_VERSION           = auth._ctx:conn_version()
-        env.TLS_CLIENT_HASH       = auth._ctx:peer_cert_hash()
-        env.TLS_CLIENT_ISSUER     = auth.I
-        env.TLS_CLIENT_SUBJECT    = auth.S
-        env.TLS_CLIENT_NOT_BEFORE = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notbefore)
-        env.TLS_CLIENT_NOT_AFTER  = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notafter)
-        env.TLS_CLIENT_REMAIN     = remain
-        
-        gi.breakdown(env,"TLS_CLIENT_ISSUER_", auth.issuer)
-        gi.breakdown(env,"TLS_CLIENT_SUBJECT_",auth.subject)
-        
-        env.AUTH_TYPE   = 'Certificate'
-        env.REMOTE_USER = env.TLS_CLIENT_SUBJECT_CN
+    local env  = gi.setup_env(auth,program,directory,location,sconf,hconf)
+    local prog do
+      if program:match "^/" then
+        prog = uurl.rm_dot_segs:match(program)
       else
-        env.SSL_CIPHER          = auth._ctx:conn_cipher()
-        env.SSL_PROTOCOL        = auth._ctx:conn_version()
-        env.SSL_CLIENT_I_DN     = auth.I
-        env.SSL_CLIENT_S_DN     = auth.S
-        env.SSL_CLIENT_V_START  = os.date("%b %d %H:%M:%S %Y GMT",auth.notbefore)
-        env.SSL_CLIENT_V_END    = os.date("%b %d %H:%M:%S %Y GMT",auth.notafter)
-        env.SSL_CLIENT_V_REMAIN = remain
-        env.SSL_TLS_SNI         = location.host
-        
-        gi.breakdown(env,"SSL_CLIENT_I_DN_",auth.issuer)
-        gi.breakdown(env,"SSL_CLIENT_S_DN_",auth.subject)
-        
-        env.AUTH_TYPE   = 'Certificate'
-        env.REMOTE_USER = env.SSL_CLIENT_S_DN_CN
+        prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
       end
     end
     
-    -- ===================================================
-    
-    local sconfi = gi.get_instance(location,sconf.instance)
-    local hconfi = gi.get_instance(location,hconf.instance)
-    local cwd    = hconfi.cwd or hconf.cwd or sconfi.cwd or sconf.cwd or directory
-    
-    gi.merge_env(env,sconf.env)
-    gi.merge_env(env,sconfi.env)
-    gi.merge_env(env,hconf.env)
-    gi.merge_env(env,hconfi.env)
-    
-    env.GEMINI_DOCUMENT_ROOT = cwd
-    env.GEMINI_URL_PATH      = location.path
-    env.GEMINI_URL           = uurl.toa(location)
-    env.GATEWAY_INTERFACE    = "CGI/1.1"
-    env.QUERY_STRING         = location.query or ""
-    env.REMOTE_ADDR          = auth._remote
-    env.REMOTE_HOST          = auth._remote
-    env.REQUEST_METHOD       = ""
-    env.SCRIPT_NAME          = program
-    env.SERVER_NAME          = location.host
-    env.SERVER_PORT          = tostring(location.port)
-    env.SERVER_PROTOCOL      = "GEMINI"
-    env.SERVER_SOFTWARE      = "GLV-1.12556/1"
-    
-    if (gi.isset(hconfi.http,hconf.http,sconfi.http,sconf.http))         then add_http()   end
-    if (gi.isset(hconfi.apache,hconf.apache,sconfi.apache,sconf.apache)) then add_apache() end
-    if (gi.isset(hconfi.envtls,hconf.envtls,sconfi.envtls,sconf.envtls)) then
-      add_tlsenv(hconfi.apache or hconf.apache or sconfi.apache,sconf.apache)
-    end
-    
-    -- -----------------------------------------------------------------------
-    -- The passed in dir is a relative path starting with "./".  So when
-    -- searching for dir in location.path, start just past the leading period.
-    -- -----------------------------------------------------------------------
-    
-    local _,e      = location.path:find(fsys.basename(program),1,true)
-    local pathinfo = e and location.path:sub(e+1,-1) or location.path
-    
-    if pathinfo ~= "" then
-      env.PATH_INFO       = pathinfo
-      env.PATH_TRANSLATED = directory .. env.PATH_INFO
-    end
-    
-    local okay,err2 = fsys.chdir(cwd)
+    local okay,err2 = fsys.chdir(directory)
     if not okay then
-      syslog('error',"CGI cwd(%q) = %s",cwd,errno[err2])
+      syslog('error',"CGI cwd(%q) = %s",directory,errno[err2])
       process.exit(exit.CONFIG)
     end
     

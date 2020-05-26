@@ -65,7 +65,7 @@ address = "[::]:1965"
 -- sent to the Gemini client.  The following environment variables will be
 -- defined:
 --
--- GEMINI_DOCUMENT_ROOT Top level directory of site (unless defined by cwd)
+-- GEMINI_DOCUMENT_ROOT Top level directory of site
 -- GEMINI_URL_PATH      The path portion of the URL
 -- GEMINI_URL           The full URL of the request
 -- GATEWAY_INTERFACE    Will be set to "CGI/1.1"
@@ -136,7 +136,6 @@ cgi =
   -- optional, and do not need to be defined.
   -- -----------------------------------------------------------------
   
-  cwd    = "/tmp", -- all scripts will have this as the current working directory
   http   = false,  -- (default value) use HTTP specific variables
   apache = false,  -- (default value) use Aapche specific variables
   envtls = false,  -- (default value) include details from TLS certificate
@@ -160,14 +159,8 @@ cgi =
   
   instance =
   {
-    ['^/private/foo/?.*'] =
-    {
-      cwd = '/var/tmp' -- different cwd
-    },
-    
     ['^/private/index.gemini$'] =
     {
-      cwd = '/var/private', -- again, different cwd
       envtls = true,        -- we WANT TLS env vars for this
     },
     
@@ -198,7 +191,7 @@ cgi =
 --
 -- CONTENT_LENGTH       Will be set to "0"
 -- SCGI                 Will be set to "1"
--- GEMINI_DOCUMENT_ROOT Top level directory of site (unless defined by cwd)
+-- GEMINI_DOCUMENT_ROOT Top level directory of site
 -- GEMINI_URL_PATH      The path portion of the URL
 -- GEMINI_URL           The full URL of the request
 -- PATH_INFO            May be set (see RFC-3875 for details)
@@ -480,8 +473,6 @@ hosts =
     
     cgi =
     {
-      cwd = "/var/example.com/tmp",
-      
       -- ------------------------------------------------------------
       -- We can add some additional environment variables or overwrite
       -- some previously set variables.
@@ -498,7 +489,6 @@ hosts =
       {
         ['^/private/foo2/?.*'] =
         {
-          cwd = "/tmp",
           env =
           {
             LD_PRELOAD = "/var/example.com/lib/debug.so",

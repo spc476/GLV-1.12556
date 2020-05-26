@@ -20,17 +20,22 @@
 --
 -- ************************************************************************
 -- luacheck: globals parse_headers get_instance isset merge_env
--- luacheck: globals breakdown handle_output
+-- luacheck: globals breakdown setup_env handle_output
 -- luacheck: ignore 611
 -- RFC-3875
 
 local syslog = require "org.conman.syslog"
 local abnf   = require "org.conman.parsers.abnf"
+local fsys   = require "org.conman.fsys"
 local lpeg   = require "lpeg"
+local math   = require "math"
+local os     = require "os"
 local MSG    = require "GLV-1.MSG"
+local uurl   = require "GLV-1.url-util"
 
 local pairs    = pairs
 local tonumber = tonumber
+local tostring = tostring
 
 _ENV = {}
 
@@ -138,6 +143,110 @@ function breakdown(env,base,fields)
   for name,value in pairs(fields) do
     env[base .. name] = value
   end
+end
+
+-- ************************************************************************
+
+function setup_env(auth,program,directory,location,sconf,hconf)
+  sconf = sconf or {} -- server wide config
+  hconf = hconf or {} -- host config
+  
+  local sconfi = get_instance(location,sconf.instance)
+  local hconfi = get_instance(location,hconf.instance)
+  local env    = {}
+  
+  merge_env(env,sconf.env)
+  merge_env(env,sconfi.env)
+  merge_env(env,hconf.env)
+  merge_env(env,hconfi.env)
+  
+  env.GEMINI_DOCUMENT_ROOT = directory
+  env.GEMINI_URL_PATH      = location.path
+  env.GEMINI_URL           = uurl.toa(location)
+  env.QUERY_STRING         = location.query or ""
+  env.REMOTE_ADDR          = auth._remote
+  env.REMOTE_HOST          = auth._remote
+  env.SCRIPT_NAME          = program
+  env.SERVER_NAME          = location.host
+  env.SERVER_PORT          = tostring(location.port)
+  env.SERVER_SOFTWARE      = "GLV-1.12556/1"
+  
+  local _,e      = location.path:find(fsys.basename(program),1,true)
+  local pathinfo = e and location.path:sub(e+1,-1) or location.path
+  
+  if pathinfo ~= "" then
+    env.PATH_INFO       = pathinfo
+    env.PATH_TRANSLATED = directory .. pathinfo
+  end
+  
+  local http   = isset(hconfi.http,hconf.http,sconfi.http,sconf.http)
+  local apache = isset(hconfi.apache,hconf.apache,sconfi.apache,sconf.apache)
+  local envtls = isset(hconfi.envtls,hconf.envtls,sconfi.envtls,sconf.envtls)
+  
+  if http then
+    env.REQUEST_METHOD       = "GET"
+    env.SERVER_PROTOCOL      = "HTTP/1.0"
+    env.HTTP_ACCEPT          = "*/*"
+    env.HTTP_ACCEPT_LANGUAGE = "*"
+    env.HTTP_CONNECTION      = "close"
+    env.HTTP_REFERER         = ""
+    env.HTTP_USER_AGENT      = ""
+  else
+    env.REQUEST_METHOD       = ""
+    env.SERVER_PROTOCOL      = "GEMINI"
+  end
+  
+  if auth._provided then
+    env.AUTH_TYPE   = "Certificate"
+    env.REMOTE_USER = auth.subject.CN
+  
+    if envtls then
+      local remain = tostring(math.floor(os.difftime(auth.notafter,auth.now) / 86400))
+      
+      if not apache then
+        env.TLS_CIPHER            = auth._ctx:conn_cipher()
+        env.TLS_VERSION           = auth._ctx:conn_version()
+        env.TLS_CLIENT_HASH       = auth._ctx:peer_cert_hash()
+        env.TLS_CLIENT_ISSUER     = auth.I
+        env.TLS_CLIENT_SUBJECT    = auth.S
+        env.TLS_CLIENT_NOT_BEFORE = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notbefore)
+        env.TLS_CLIENT_NOT_AFTER  = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notafter)
+        env.TLS_CLIENT_REMAIN     = remain
+        
+        breakdown(env,"TLS_CLIENT_ISSUER_", auth.issuer)
+        breakdown(env,"TLS_CLIENT_SUBJECT_",auth.subject)
+      else
+        env.SSL_CIPHER          = auth._ctx:conn_cipher()
+        env.SSL_PROTOCOL        = auth._ctx:conn_version()
+        env.SSL_CLIENT_I_DN     = auth.I
+        env.SSL_CLIENT_S_DN     = auth.S
+        env.SSL_CLIENT_V_START  = os.date("%b %d %H:%M:%S %Y GMT",auth.notbefore)
+        env.SSL_CLIENT_V_END    = os.date("%b %d %H:%M:%S %Y GMT",auth.notafter)
+        env.SSL_CLIENT_V_REMAIN = remain
+        env.SSL_TLS_SNI         = location.host
+        
+        breakdown(env,"SSL_CLIENT_I_DN_",auth.issuer)
+        breakdown(env,"SSL_CLIENT_S_DN_",auth.subject)
+      end
+    end
+  end
+  
+  if apache then
+    local prog do
+      if program:match "^/" then
+        prog = uurl.rm_dot_segs:match(program)
+      else
+        prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
+      end
+    end
+    
+    env.DOCUMENT_ROOT         = directory
+    env.CONTEXT_DOCUMENT_ROOT = directory
+    env.CONTENT_PREFIX        = ""
+    env.SCRIP_FILENAME        = prog
+  end
+  
+  return env
 end
 
 -- ************************************************************************
