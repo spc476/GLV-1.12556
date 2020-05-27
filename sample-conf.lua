@@ -180,9 +180,10 @@ cgi =
 -- ************************************************************************
 -- SCGI definition block, optional, no default values
 --
--- Any symbolic link found in the form of 'scgi://hostname:port' will be
--- treated as a SCGI program, with the server connecting to the hostname on
--- the given port.  This module implements the SCGI standard as defined in
+-- Any symbolic link found in the form of 'scgi://hostname:port' or in the
+-- form of 'scgi:/path/to/unixsocket' will be treated as a SCGI program,
+-- with the server connecting to the hostname on the given port.  This
+-- module implements the SCGI standard as defined in
 --
 -- https://web.archive.org/web/20020403050958/http://python.ca/nas/scgi/protocol.txt
 --

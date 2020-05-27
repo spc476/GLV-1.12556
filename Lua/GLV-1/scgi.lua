@@ -25,6 +25,7 @@ local syslog = require "org.conman.syslog"
 local fsys   = require "org.conman.fsys"
 local errno  = require "org.conman.errno"
 local url    = require "org.conman.parsers.url"
+local net    = require "org.conman.net"
 local tcp    = require "org.conman.nfl.tcp"
 local MSG    = require "GLV-1.MSG"
 local gi     = require "GLV-1.gateway"
@@ -64,21 +65,34 @@ return function(auth,program,directory,location)
   
   local scgiloc = url:match(scgiurl)
   if not scgiloc then
-    syslog('error',"SCGI: bad link %q",scgiloc)
+    syslog('error',"SCGI: bad link %q",scgiurl)
     return 40,MSG[40],""
   end
   
-  if not scgiloc.host then
-    syslog('error',"SCGI: %q missing host",program)
+  if scgiloc.scheme ~= 'scgi' then
+    syslog('error',"SCGI: bad scheme %q",scgiurl)
     return 40,MSG[40],""
   end
   
-  if not scgiloc.port then
-    syslog('error',"SCGI: %q missing port",program)
-    return 40,MSG[40],""
+  local addr
+  
+  if scgiloc.host then
+    if not scgiloc.port then
+      syslog('error',"SCGI: %q missing port",scgiurl)
+      return 40,MSG[40],''
+    end
+    
+    addr = net.address2(scgiloc.host,'any','tcp',scgiloc.port)[1]
+  else
+    if scgiloc.path == "" then
+      syslog('error',"SCGI: %q missing path",scgiurl)
+      return 40,MSG[40],''
+    end
+    
+    addr = net.address(scgiloc.path,'tcp')
   end
   
-  local ios = tcp.connect(scgiloc.host,scgiloc.port,5)
+  local ios = tcp.connecta(addr,5)
   if not ios then
     return 40,MSG[40],""
   end
