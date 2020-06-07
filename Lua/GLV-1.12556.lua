@@ -348,7 +348,7 @@ local function main(ios)
   if loc.scheme ~= 'gemini'
   or not CONF.hosts[loc.host]
   or loc.port   ~= CONF.hosts[loc.host].port then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
+    log(ios,53,request,reply(ios,"53 ",MSG[53],"\r\n"))
     ios:close()
     return
   end
