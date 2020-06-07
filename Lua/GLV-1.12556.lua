@@ -263,7 +263,7 @@ local cert_parse do
   local R  = lpeg.R
   
   local name   = R("AZ","az")^1
-  local value  = R(" .","0\255")^1
+  local value  = R(" .","0\255")^0
   local record = Cg(P"/" * C(name) * P"=" * C(value))
   cert_parse   = Cf(Ct"" * record^1,function(acc,n,v) acc[n] = v return acc end)
 end
