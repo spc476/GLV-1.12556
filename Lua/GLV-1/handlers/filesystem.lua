@@ -112,7 +112,17 @@ function handler(conf,auth,loc,match)
     end
   end
   
-  for dir,segment in descend_path(match[1]) do
+  -- ----------------------------------------------------------------------
+  -- To keep thing simple, we still support the older method of specifying
+  -- the path with a single match.  This may change in the future, but for
+  -- now, let's do this.
+  -- ----------------------------------------------------------------------
+  
+  if #match == 1 then
+    match[1],match[2] = match[1]:match("^(/)(.*)")
+  end
+  
+  for dir,segment in descend_path(match[2]) do
     -- ----------------------------------------------------
     -- Skip the following files that match these patterns
     -- ----------------------------------------------------
@@ -164,7 +174,7 @@ function handler(conf,auth,loc,match)
   -- Check for an index file
   -- ------------------------
   
-  local final = conf.directory .. "/" .. match[1]
+  local final = conf.directory .. "/" .. match[2]
   if fsys.access(final .. "/" .. conf.index,"r") then
     return read_file(final .. "/" .. conf.index)
   end
@@ -175,7 +185,7 @@ function handler(conf,auth,loc,match)
   
   local res =
   {
-    string.format("Index of %s",match[1]),
+    string.format("Index of %s",match[2]),
     "---------------------------",
     ""
   }
