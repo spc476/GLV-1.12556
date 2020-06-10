@@ -84,7 +84,7 @@ end
 -- ************************************************************************
 
 function handler(conf,auth,loc,match)
-  local function read_file(file)
+  local function read_file(file,base)
     local function contents(mime)
       local f,err = io.open(file,"rb")
       if not f then
@@ -98,7 +98,7 @@ function handler(conf,auth,loc,match)
     end
     
     if fsys.access(file,"rx") then
-      return cgi(auth,file,conf,loc)
+      return cgi(auth,file,conf,base,loc)
     end
     
     if not fsys.access(file,"r") then
@@ -150,9 +150,13 @@ function handler(conf,auth,loc,match)
         return 51,MSG[51],""
       end
     elseif info.mode.type == 'file' then
-      return read_file(name)
+      local _,e  = loc.path:find(segment,1,true)
+      local base = loc.path:sub(1,e)
+      return read_file(name,base)
     elseif info.mode.type == 'link' then
-      return scgi(auth,name,conf,loc)
+      local _,e  = loc.path:find(segment,1,true)
+      local base = loc.path:sub(1,e)
+      return scgi(auth,name,conf,base,loc)
     else
       return 51,MSG[51],""
     end

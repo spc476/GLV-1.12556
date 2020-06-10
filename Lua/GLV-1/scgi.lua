@@ -35,7 +35,7 @@ local tostring = tostring
 
 -- ************************************************************************
 
-return function(auth,program,directory,location)
+return function(auth,program,directory,base,location)
   local gconf = require "CONF".scgi
   local hconf = require "CONF".hosts[location.host].scgi
   local dconf = directory.scgi
@@ -51,7 +51,7 @@ return function(auth,program,directory,location)
     return 40,MSG[40],""
   end
   
-  local env  = gi.setup_env(auth,program,location,directory,'scgi',hconf,gconf)
+  local env  = gi.setup_env(auth,program,base,location,directory,'scgi',hconf,gconf)
   local tenv = "CONTENT_LENGTH" .. '\0' .. "0" .. '\0'
             .. "SCGI"           .. '\0' .. "1" .. '\0'
   

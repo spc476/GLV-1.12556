@@ -100,7 +100,7 @@ end
 
 -- ************************************************************************
 
-return function(auth,program,directory,location)
+return function(auth,program,directory,base,location)
   local gconf = require "CONF".cgi
   local hconf = require "CONF".hosts[location.host].cgi
   local dconf = directory.cgi
@@ -177,7 +177,7 @@ return function(auth,program,directory,location)
     end
     
     local args = parse_cgi_args:match(location.query or "") or {}
-    local env  = gi.setup_env(auth,program,location,directory,'cgi',hconf,gconf)
+    local env  = gi.setup_env(auth,program,base,location,directory,'cgi',hconf,gconf)
     local prog do
       if program:match "^/" then
         prog = uurl.rm_dot_segs:match(program)

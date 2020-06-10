@@ -153,7 +153,7 @@ end
 
 -- ************************************************************************
 
-function setup_env(auth,program,location,directory,di,hconf,gconf)
+function setup_env(auth,program,base,location,directory,di,hconf,gconf)
   gconf       = gconf         or {} -- server wide config
   hconf       = hconf         or {} -- host config
   local dconf = directory[di] or {} -- directory config
@@ -176,7 +176,7 @@ function setup_env(auth,program,location,directory,di,hconf,gconf)
   env.QUERY_STRING         = location.query or ""
   env.REMOTE_ADDR          = auth._remote
   env.REMOTE_HOST          = auth._remote
-  env.SCRIPT_NAME          = program
+  env.SCRIPT_NAME          = base
   env.SERVER_NAME          = location.host
   env.SERVER_PORT          = tostring(location.port)
   env.SERVER_SOFTWARE      = "GLV-1.12556/1"

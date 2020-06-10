@@ -435,7 +435,7 @@ hosts =
       {
         path      = '^/motd$',
         module    = "GLV-1.handlers.file",
-        file      = "/etc/motd", -- mandatory 
+        file      = "/etc/motd", -- mandatory
         extension = ".gemini",   -- optional, default value
       },
       
