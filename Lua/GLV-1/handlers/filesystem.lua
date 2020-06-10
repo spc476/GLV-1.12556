@@ -204,11 +204,15 @@ function handler(conf,auth,loc,match)
     if not info then
       return false
     elseif info.mode.type == 'file' then
-      return fsys.access(fname,"r"),'file'
+      if fsys.access(fname,'rx') then
+        return true,'file','CGI script'
+      else
+        return fsys.access(fname,"r"),'file',string.format("%d bytes",info.size)
+      end
     elseif info.mode.type == 'dir' then
       return fsys.access(fname,"x"),'dir'
     elseif info.mode.type == 'link' then
-      return true,'file'
+      return true,'file','SCGI script'
     else
       return false
     end
@@ -221,17 +225,17 @@ function handler(conf,auth,loc,match)
   }
   
   for entry in fsys.dir(final) do
-    local okay,type = access_okay(final,entry)
+    local okay,type,meta = access_okay(final,entry)
     if okay then
-      table.insert(lists[type],entry)
+      table.insert(lists[type],{ name = entry , meta = meta })
     end
   end
   
-  table.sort(lists.dir)
-  table.sort(lists.file)
+  table.sort(lists.dir, function(a,b) return a.name < b.name end)
+  table.sort(lists.file,function(a,b) return a.name < b.name end)
   
   for _,entry in ipairs(lists.dir) do
-    table.insert(res,string.format("=> %s/\t%s/",uurl.esc_path:match(entry),entry))
+    table.insert(res,string.format("=> %s/\t%s/",uurl.esc_path:match(entry.name),entry.name))
   end
   
   if #lists.dir > 0 then
@@ -239,7 +243,7 @@ function handler(conf,auth,loc,match)
   end
   
   for _,entry in ipairs(lists.file) do
-    table.insert(res,string.format("=> %s\t%s",uurl.esc_path:match(entry),entry))
+    table.insert(res,string.format("=> %s\t%s (%s)",uurl.esc_path:match(entry.name),entry.name,entry.meta))
   end
   
   table.insert(res,"")
