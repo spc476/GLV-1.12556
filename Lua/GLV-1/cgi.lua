@@ -101,8 +101,9 @@ end
 -- ************************************************************************
 
 return function(auth,program,directory,location)
-  local sconf = require "CONF".cgi
+  local gconf = require "CONF".cgi
   local hconf = require "CONF".hosts[location.host].cgi
+  local dconf = directory.cgi
   
   -- ------------------------------------------------------------------------
   -- If the cgi block is not defined for the server, nor for a host, and we
@@ -112,12 +113,13 @@ return function(auth,program,directory,location)
   -- error in that case too.
   -- ------------------------------------------------------------------------
   
-  if not sconf and not hconf then
+  if not gconf and not hconf and not dconf then
     syslog('error',"CGI script called, but CGI not configured!")
     return 40,MSG[40],""
   end
   
-  if hconf == false then
+  if dconf == false
+  or hconf == false and dconf == nil then
     syslog('error',"CGI script called, but CGI not configured!")
     return 40,MSG[40],""
   end
@@ -175,7 +177,7 @@ return function(auth,program,directory,location)
     end
     
     local args = parse_cgi_args:match(location.query or "") or {}
-    local env  = gi.setup_env(auth,program,directory,location,sconf,hconf)
+    local env  = gi.setup_env(auth,program,location,directory,'cgi',hconf,gconf)
     local prog do
       if program:match "^/" then
         prog = uurl.rm_dot_segs:match(program)
@@ -184,9 +186,9 @@ return function(auth,program,directory,location)
       end
     end
     
-    local okay,err2 = fsys.chdir(directory)
+    local okay,err2 = fsys.chdir(directory.directory)
     if not okay then
-      syslog('error',"CGI cwd(%q) = %s",directory,errno[err2])
+      syslog('error',"CGI cwd(%q) = %s",directory.directory,errno[err2])
       process.exit(exit.CONFIG)
     end
     

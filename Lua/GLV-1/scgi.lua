@@ -36,20 +36,22 @@ local tostring = tostring
 -- ************************************************************************
 
 return function(auth,program,directory,location)
-  local sconf = require "CONF".scgi
+  local gconf = require "CONF".scgi
   local hconf = require "CONF".hosts[location.host].scgi
+  local dconf = directory.scgi
   
-  if not sconf and not hconf then
+  if not gconf and not hconf and not dconf then
     syslog('error',"SCGI called, but SCGI not configured!")
     return 40,MSG[40],""
   end
   
-  if hconf == false then
+  if dconf == false
+  or hconf == false and dconf == nil then
     syslog('error',"SCGI called, but SCGI not configured!")
     return 40,MSG[40],""
   end
   
-  local env  = gi.setup_env(auth,program,directory,location,sconf,hconf)
+  local env  = gi.setup_env(auth,program,location,directory,'scgi',hconf,gconf)
   local tenv = "CONTENT_LENGTH" .. '\0' .. "0" .. '\0'
             .. "SCGI"           .. '\0' .. "1" .. '\0'
   

@@ -19,7 +19,7 @@
 --    Comments, questions and criticisms can be sent to: sean@conman.org
 --
 -- ************************************************************************
--- luacheck: globals parse_headers get_instance isset merge_env
+-- luacheck: globals parse_headers get_instance isset merge
 -- luacheck: globals breakdown setup_env handle_output
 -- luacheck: ignore 611
 -- RFC-3875
@@ -34,6 +34,7 @@ local MSG    = require "GLV-1.MSG"
 local uurl   = require "GLV-1.url-util"
 
 local pairs    = pairs
+local select   = select
 local tonumber = tonumber
 local tostring = tostring
 
@@ -120,21 +121,26 @@ end
 
 -- ************************************************************************
 
-function isset(hci,hc,sci,sc)
-  if hci ~= nil then return hci end
-  if hc  ~= nil then return hc  end
-  if sci ~= nil then return sci end
-  return sc
+function isset(...)
+  for i = 1 , select('#',...) do
+    local v = select(i,...)
+    if v ~= nil then return v end
+  end
 end
 
 -- ************************************************************************
 
-function merge_env(accenv,menv)
-  if menv then
-    for var,val in pairs(menv) do
-      accenv[var] = val
+function merge(...)
+  local accenv = {}
+  for i = 1 , select('#',...) do
+    local env = select(i,...)
+    if env then
+      for var,val in pairs(env) do
+        accenv[var] = val
+      end
     end
   end
+  return accenv
 end
 
 -- ************************************************************************
@@ -147,20 +153,24 @@ end
 
 -- ************************************************************************
 
-function setup_env(auth,program,directory,location,sconf,hconf)
-  sconf = sconf or {} -- server wide config
-  hconf = hconf or {} -- host config
+function setup_env(auth,program,location,directory,di,hconf,gconf)
+  gconf       = gconf         or {} -- server wide config
+  hconf       = hconf         or {} -- host config
+  local dconf = directory[di] or {} -- directory config
   
-  local sconfi = get_instance(location,sconf.instance)
+  local gconfi = get_instance(location,gconf.instance)
   local hconfi = get_instance(location,hconf.instance)
-  local env    = {}
-  
-  merge_env(env,sconf.env)
-  merge_env(env,sconfi.env)
-  merge_env(env,hconf.env)
-  merge_env(env,hconfi.env)
-  
-  env.GEMINI_DOCUMENT_ROOT = directory
+  local dconfi = get_instance(location,dconf.instance)
+  local env    = merge(
+                        gconf.env,
+                        gconfi.env,
+                        hconf.env,
+                        hconfi.env,
+                        dconf.env,
+                        dconfi.env
+                      )
+                      
+  env.GEMINI_DOCUMENT_ROOT = directory.directory
   env.GEMINI_URL_PATH      = location.path
   env.GEMINI_URL           = uurl.toa(location)
   env.QUERY_STRING         = location.query or ""
@@ -176,12 +186,12 @@ function setup_env(auth,program,directory,location,sconf,hconf)
   
   if pathinfo ~= "" then
     env.PATH_INFO       = pathinfo
-    env.PATH_TRANSLATED = directory .. pathinfo
+    env.PATH_TRANSLATED = directory.directory .. pathinfo
   end
   
-  local http   = isset(hconfi.http,hconf.http,sconfi.http,sconf.http)
-  local apache = isset(hconfi.apache,hconf.apache,sconfi.apache,sconf.apache)
-  local envtls = isset(hconfi.envtls,hconf.envtls,sconfi.envtls,sconf.envtls)
+  local http   = isset(dconfi.http,  dconf.http,  hconfi.http,  hconf.http,  gconfi.http,  gconf.http)
+  local apache = isset(dconfi.apache,dconf.apache,hconfi.apache,hconf.apache,gconfi.apache,gconf.apache)
+  local envtls = isset(dconfi.envtls,dconf.envtls,hconfi.envtls,hconf.envtls,gconfi.envtls,gconf.envtls)
   
   if http then
     env.REQUEST_METHOD       = "GET"
@@ -240,8 +250,8 @@ function setup_env(auth,program,directory,location,sconf,hconf)
       end
     end
     
-    env.DOCUMENT_ROOT         = directory
-    env.CONTEXT_DOCUMENT_ROOT = directory
+    env.DOCUMENT_ROOT         = directory.directory
+    env.CONTEXT_DOCUMENT_ROOT = directory.directory
     env.CONTENT_PREFIX        = ""
     env.SCRIP_FILENAME        = prog
   end

@@ -98,7 +98,7 @@ function handler(conf,auth,loc,match)
     end
     
     if fsys.access(file,"rx") then
-      return cgi(auth,file,conf.directory,loc)
+      return cgi(auth,file,conf,loc)
     end
     
     if not fsys.access(file,"r") then
@@ -142,7 +142,7 @@ function handler(conf,auth,loc,match)
     elseif info.mode.type == 'file' then
       return read_file(name)
     elseif info.mode.type == 'link' then
-      return scgi(auth,name,conf.directory,loc)
+      return scgi(auth,name,conf,loc)
     else
       return 51,MSG[51],""
     end
