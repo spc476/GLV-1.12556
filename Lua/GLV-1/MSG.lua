@@ -33,9 +33,6 @@ return {
   [53] = "Proxy Request Refused",
   [59] = "Bad Request",
   [60] = "Client Certificate Required",
-  [61] = "Transient Certificate Required",
-  [62] = "Authorized Certicate Required",
-  [63] = "Certificate Not Accepted",
-  [64] = "Future Certificate Rejected",
-  [65] = "Expired Certificate Rejected",
+  [61] = "Certificate Not Authorized",
+  [62] = "Certificate Not Valid",
 }

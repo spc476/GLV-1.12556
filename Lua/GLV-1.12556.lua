@@ -382,8 +382,7 @@ local function main(ios)
   for _,rule in ipairs(CONF.hosts[loc.host].authorization) do
     if loc.path:match(rule.path) then
       if not ios.__ctx:peer_cert_provided() then
-        local ret = rule.status or 60
-        log(ios,ret,request,reply(ios,ret," ",MSG[ret],"\r\n"))
+        log(ios,60,request,reply(ios,"60 ",MSG[60],"\r\n"))
         ios:close()
         return
       end
@@ -399,13 +398,13 @@ local function main(ios)
       auth.now       = os.time()
       
       if auth.now < auth.notbefore then
-        log(ios,64,request,reply(ios,"64 ",MSG[64],"\r\n"),auth)
+        log(ios,62,request,reply(ios,"62 ",MSG[62],"\r\n"),auth)
         ios:close()
         return
       end
       
       if auth.now > auth.notafter then
-        log(ios,65,request,reply(ios,"65 ",MSG[65],"\r\n"),auth)
+        log(ios,62,request,reply(ios,"62 ",MSG[62],"\r\n"),auth)
         ios:close()
         return
       end
@@ -419,7 +418,7 @@ local function main(ios)
       end
       
       if not allowed then
-        log(ios,63,request,reply(ios,"63 ",MSG[63],"\r\n"),auth)
+        log(ios,61,request,reply(ios,"61 ",MSG[61],"\r\n"),auth)
         ios:close()
         return
       end

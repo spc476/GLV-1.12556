@@ -343,18 +343,6 @@ hosts =
         
         path   = "^/private",
         
-        -- ---------------------------------------------------------
-        -- The return status if the check fails.  The values are:
-        --
-        -- 60 - Client certificate required
-        -- 61 - Transient client certificate required
-        -- 62 - Authorized client certificate required
-        --
-        -- 60 is the default value if not specified
-        -- ---------------------------------------------------------
-        
-        status = 62,
-        
         -- ------------------------------------------------------------------
         -- Function to check the certificate.  It's given the issuer
         -- information, the subject information and the broken down request.
