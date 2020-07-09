@@ -337,6 +337,7 @@ local function main(ios)
   
   if not loc.scheme then
     loc.scheme = 'gemini'
+    loc.port   = ios.__sock:addr().port
   end
   
   if not loc.host then
