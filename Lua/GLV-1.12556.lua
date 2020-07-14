@@ -355,6 +355,16 @@ local function main(ios)
   end
   
   -- ---------------------------------------------------------------
+  -- user portion of a URL is invalid.
+  -- ---------------------------------------------------------------
+  
+  if loc.user then
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
+    ios:close()
+    return
+  end
+  
+  -- ---------------------------------------------------------------
   -- Relative path resolution is the domain of the client, not the
   -- server.  So reject any requests with relative path elements.
   -- Also check for multiple '//' in a path, which I'm treating
