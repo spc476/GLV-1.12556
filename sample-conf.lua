@@ -425,6 +425,7 @@ hosts =
         module    = "GLV-1.handlers.file",
         file      = "/etc/motd", -- mandatory
         extension = ".gemini",   -- optional, default value
+        mime      = "text/plain" -- optional, if GNU magic can't determine type
       },
       
       -- ------------------------------------

@@ -84,6 +84,8 @@ function handler(conf)
   
   if conf.file:match(conf.extension) then
     return contents("text/gemini")
+  elseif conf.mime then
+    return contents(conf.mime)
   else
     return contents(magic(conf.file))
   end
