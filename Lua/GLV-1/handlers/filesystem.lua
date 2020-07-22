@@ -26,7 +26,6 @@ local syslog = require "org.conman.syslog"
 local errno  = require "org.conman.errno"
 local fsys   = require "org.conman.fsys"
 local magic  = require "org.conman.fsys.magic"
-local lpeg   = require "lpeg"
 local uurl   = require "GLV-1.url-util"
 local MSG    = require "GLV-1.MSG"
 local cgi    = require "GLV-1.cgi"
@@ -36,35 +35,57 @@ local string = require "string"
 local table  = require "table"
 
 local ipairs = ipairs
+local pairs  = pairs
 
 _ENV = {}
 
 -- ************************************************************************
 
-local extension do
-  local char = lpeg.C(lpeg.S"^$()%.[]*+-?") / "%%%1"
-             + lpeg.R" \255"
-  extension  = lpeg.Cs(char^1 * lpeg.Cc"$")
-end
-
--- ************************************************************************
-
-function init(conf)
-  if not conf.index then
-    conf.index = "index.gemini"
+function init(iconf,hconf,gconf)
+  iconf.index     = iconf.index
+                 or hconf.index
+                 or gconf.index
+                 or "index.gemini"
+  iconf.no_access = iconf.no_access
+                 or hconf.no_access
+                 or gconf.no_access
+                 or { "^%." }
+  iconf.extension = iconf.extension
+                 or hconf.extension
+                 or gconf.extension
+                 or ".gemini"
+                 
+  local gmime = gconf.mime or {}
+  local hmime = hconf.mime or {}
+  
+  for ext,mimetype in pairs(gmime) do
+    if hmime[ext] == nil then
+      hmime[ext] = mimetype
+    end
   end
   
-  if not conf.extension then
-    conf.extension = '%.gemini$'
+  if not iconf.mime then
+    iconf.mime = hmime
   else
-    conf.extension = extension:match(conf.extension)
+    for ext,mimetype in pairs(hmime) do
+      if iconf.mime[ext] == nil then
+        iconf.mime[ext] = mimetype
+      end
+    end
   end
   
-  if not conf.no_access then
-    conf.no_access = { "^%." }
+  do
+    local ext = iconf.extension:sub(2,-1)
+    if iconf.mime[ext] then
+      if iconf.mime[ext] ~= 'text/gemini' then
+        syslog('warning',"overriding existing MIME type for .%s",ext)
+        iconf.mime[ext] = 'text/gemini'
+      end
+    else
+      iconf.mime[ext] = 'text/gemini'
+    end
   end
   
-  magic:flags 'mime'
   return true
 end
 
@@ -86,6 +107,11 @@ end
 function handler(conf,auth,loc,match)
   local function read_file(file,base)
     local function contents(mime)
+      if mime == "" then
+        syslog('warning',"%s: missing MIME type",file)
+        mime = 'text/plain'
+      end
+      
       local f,err = io.open(file,"rb")
       if not f then
         syslog('error',"%s: %s",file,err)
@@ -105,11 +131,7 @@ function handler(conf,auth,loc,match)
       return 51,MSG[51],""
     end
     
-    if file:match(conf.extension) then
-      return contents("text/gemini")
-    else
-      return contents(magic(file))
-    end
+    return contents(conf.mime[fsys.extension(file)] or magic(file))
   end
   
   -- ----------------------------------------------------------------------

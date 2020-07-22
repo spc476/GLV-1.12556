@@ -28,19 +28,22 @@ local string = require "string"
 _ENV = {}
 
 -- ************************************************************************
--- Usage:	okay[,err] = sample.init(conf)
+-- Usage:	okay[,err] = sample.init(iconf,hconf,gconf)
 -- Desc:	Do any initialization of the module
--- Input:	conf (table) configuration block from configuration file
+-- Input:	iconf (table) instance configuration block
+--              hconf (table) host configuation block
+--              gconf (table) global configuration block
 -- Return:	okay (boolean) true if okay, false if any error
 --		err (string) error message
 --
 -- NOTE:	This function is optional.
 --		Also, any information local to an instance can be stored
 --		in the passed in configuration block.
+--		Not all modules will use the hconf or gconf block.
 -- ************************************************************************
 
-function init(conf)
-  syslog('debug',"init(%s) path pattern=%q",conf.module,conf.path)
+function init(iconf)
+  syslog('debug',"init(%s) path pattern=%q",iconf.module,iconf.path)
   return true
 end
 

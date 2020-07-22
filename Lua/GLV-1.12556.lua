@@ -61,6 +61,7 @@ end
 
 do
   local conffile,err = loadfile(arg[1],"t",CONF)
+
   if not conffile then
     syslog('critical',"%s: %s",arg[1],err)
     io.stderr:write(string.format("%s: %s\n",arg[1],err))
@@ -120,6 +121,10 @@ do
   end
   
   CONF._interfaces = {}
+  
+  -- -------------------
+  -- Process each host.
+  -- -------------------
   
   for host,conf in pairs(CONF.hosts) do
     if not conf.certificate then
@@ -215,7 +220,7 @@ do
         end
         
         if mod.init then
-          okay,err = mod.init(info)
+          okay,err = mod.init(info,conf,CONF)
           if not okay then
             syslog('error',"%s: %s",info.module,err)
             mod.handler = notfound

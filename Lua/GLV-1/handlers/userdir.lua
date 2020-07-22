@@ -31,12 +31,12 @@ _ENV = {}
 
 -- ************************************************************************
 
-function init(conf)
+function init(conf,hconf,gconf)
   if not conf.directory then
     conf.directory = "public_gemini"
   end
   
-  filesystem.init(conf)
+  filesystem.init(conf,hconf,gconf)
   return true
 end
 
@@ -62,6 +62,7 @@ function handler(conf,auth,loc,match)
     index     = conf.index,
     extension = conf.extension,
     no_access = conf.no_access,
+    mime      = conf.mime,
   }
   
   return filesystem.handler(fsconf,auth,loc,{ match[2] })

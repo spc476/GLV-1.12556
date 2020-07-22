@@ -20,10 +20,11 @@
 --
 -- ************************************************************************
 -- luacheck: globals syslog address cgi scgi hosts
+-- luacheck: globals mime index no_access extension
 -- luacheck: ignore 611
 
 -- ************************************************************************
--- syslog() definition block, optional, default values
+-- syslog() definition block, optional, global only, default values
 -- ************************************************************************
 
 syslog =
@@ -33,7 +34,7 @@ syslog =
 }
 
 -- ************************************************************************
--- address---define the default address, default value
+-- address---optional, global or host, default value
 --
 -- This should work fine on all systems, creating a listening socket bound
 -- to all active interfaces.  If you only have IPv4, use "0.0.0.0:1965" to
@@ -57,7 +58,8 @@ syslog =
 address = "[::]:1965"
 
 -- ************************************************************************
--- CGI definition block, optional, no default values
+-- CGI definition block, optional, global, host, or filesystem handler,
+-- no default values
 --
 -- Any file found with the executable bit set is considered a CGI script and
 -- will be executed as such.  This module implements the CGI standard as
@@ -178,7 +180,8 @@ cgi =
 }
 
 -- ************************************************************************
--- SCGI definition block, optional, no default values
+-- SCGI definition block, optional, global, host, or filesystem handler,
+-- no default values
 --
 -- Any symbolic link found in the form of 'scgi://hostname:port' or in the
 -- form of 'scgi:/path/to/unixsocket' will be treated as a SCGI program,
@@ -274,6 +277,31 @@ scgi =
 }
 
 -- ************************************************************************
+-- MIME types per extension, optional, global, host, or filesystem handler,
+-- no default value.
+--
+-- Using this will override any MIME types returned by
+-- org.conman.fsys.magic.  The host and instance blocks will be mered.
+-- ************************************************************************
+
+mime =
+{
+  json = "application/json",
+}
+
+-- ************************************************************************
+-- index, no_access, extension, optional, global, host or filesystem
+-- handler, default values
+--
+-- NOTE: The index and extension should be consistent; undefined behavior
+--       otherwise.
+-- ************************************************************************
+
+index     = "index.gemini"
+no_access = { "^%." }
+extension = ".gemini"
+
+-- ************************************************************************
 -- Virtual hosts, mandatory, at least one host defined.
 -- ************************************************************************
 
@@ -326,6 +354,15 @@ hosts =
     address     = '@',
     certificate = "cert-example.com.pem",  -- mandatory
     keyfile     = "key-example.com.pem",   -- mandatory
+    
+    -- ********************************************************************
+    -- MIME types.  The global setting is merged in with this.
+    -- ********************************************************************
+    
+    mime =
+    {
+      gmi = 'text/gemini',
+    },
     
     -- ********************************************************************
     -- Authorization, optional, no default values
@@ -454,6 +491,12 @@ hosts =
         directory = "/var/example.com/share",
         index     = "index.gemini", -- optional, default value
         extension = '.gemini',      -- optional, default value
+        mime      =
+        {
+          gmi  = 'text/plain',
+          rss  = false,
+          atom = 'application/atom+xml',
+        },
         
         -- -----------------------------------------------------------------
         -- Optional, filter out filenames with the following patterns.  If
