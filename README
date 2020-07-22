@@ -20,6 +20,7 @@ Features:
 * Support for multiple directories per host
 * Support for serving up single files
 * Support for vitual hosting (multiple domains)
+* Support for specifying MIME type per file extension
 * Authentication by client certificates
 * Easily extensible with support for custom handlers
 
