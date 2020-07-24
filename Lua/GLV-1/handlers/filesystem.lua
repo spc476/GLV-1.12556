@@ -131,6 +131,17 @@ function handler(conf,auth,loc,match)
       return 51,MSG[51],""
     end
     
+    -- ---------------------------------------------------------------------
+    -- Check to see if we're at the end of the request.  If we're not, then
+    -- the client is buggy or tolling us, so return an error.
+    -- ---------------------------------------------------------------------
+    
+    local _,e      = loc.path:find(fsys.basename(file),1,true)
+    local pathinfo = e and loc.path:sub(e+1,-1) or loc.path
+    if pathinfo ~= "" then
+      return 51,MSG[51],""
+    end
+    
     return contents(conf.mime[fsys.extension(file)] or magic(file))
   end
   
