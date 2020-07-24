@@ -138,10 +138,9 @@ function handler(conf,auth,loc,match)
     
     local _,e      = loc.path:find(fsys.basename(file),1,true)
     local pathinfo = e and loc.path:sub(e+1,-1) or loc.path
-    if pathinfo ~= "" then
+    if e and pathinfo ~= "" then
       return 51,MSG[51],""
     end
-    
     return contents(conf.mime[fsys.extension(file)] or magic(file))
   end
   
