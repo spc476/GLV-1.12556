@@ -425,6 +425,12 @@ local function main(ios)
         return
       end
       
+      if not auth.subject then
+        log(ios,61,request,reply(ios,"61 ",MSG[61],"\r\n"),auth)
+        ios:close()
+        return
+      end
+      
       local okay,allowed = pcall(rule.check,auth.issuer,auth.subject,loc)
       if not okay then
         syslog('error',"%s: %s",rule.path,allowed)
