@@ -271,6 +271,7 @@ local cert_parse do
   local value  = R(" .","0\255")^0
   local record = Cg(P"/" * C(name) * P"=" * C(value))
   cert_parse   = Cf(Ct"" * record^1,function(acc,n,v) acc[n] = v return acc end)
+               + Ct""
 end
 
 -- ************************************************************************
@@ -421,12 +422,6 @@ local function main(ios)
       
       if auth.now > auth.notafter then
         log(ios,62,request,reply(ios,"62 ",MSG[62],"\r\n"),auth)
-        ios:close()
-        return
-      end
-      
-      if not auth.subject then
-        log(ios,61,request,reply(ios,"62 Missing Subject","\r\n"),auth)
         ios:close()
         return
       end

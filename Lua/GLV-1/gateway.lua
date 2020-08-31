@@ -208,7 +208,7 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
   
   if auth._provided then
     env.AUTH_TYPE   = "Certificate"
-    env.REMOTE_USER = auth.subject.CN
+    env.REMOTE_USER = auth.subject.CN or ""
   
     if envtls then
       local remain = tostring(math.floor(os.difftime(auth.notafter,auth.now) / 86400))
