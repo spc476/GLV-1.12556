@@ -426,7 +426,7 @@ local function main(ios)
       end
       
       if not auth.subject then
-        log(ios,61,request,reply(ios,"61 ",MSG[61],"\r\n"),auth)
+        log(ios,61,request,reply(ios,"62 Missing Subject","\r\n"),auth)
         ios:close()
         return
       end
