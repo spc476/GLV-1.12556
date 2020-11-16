@@ -173,6 +173,7 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
   env.GEMINI_DOCUMENT_ROOT = directory.directory
   env.GEMINI_URL_PATH      = location.path
   env.GEMINI_URL           = uurl.toa(location)
+  env.GATEWAY_INTERFACE    = "CGI/1.1"
   env.QUERY_STRING         = location.query or ""
   env.REMOTE_ADDR          = auth._remote
   env.REMOTE_HOST          = auth._remote
