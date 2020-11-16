@@ -158,6 +158,12 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
   hconf       = hconf         or {} -- host config
   local dconf = directory[di] or {} -- directory config
   
+  if program:match "^/" then
+    program = uurl.rm_dot_segs:match(program)
+  else
+    program = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
+  end
+  
   local gconfi = get_instance(location,gconf.instance)
   local hconfi = get_instance(location,hconf.instance)
   local dconfi = get_instance(location,dconf.instance)
@@ -244,18 +250,10 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
   end
   
   if apache then
-    local prog do
-      if program:match "^/" then
-        prog = uurl.rm_dot_segs:match(program)
-      else
-        prog = uurl.rm_dot_segs:match(fsys.getcwd() .. "/" .. program)
-      end
-    end
-    
     env.DOCUMENT_ROOT         = directory.directory
     env.CONTEXT_DOCUMENT_ROOT = directory.directory
     env.CONTENT_PREFIX        = ""
-    env.SCRIPT_FILENAME       = prog
+    env.SCRIPT_FILENAME       = program
   end
   
   return env
