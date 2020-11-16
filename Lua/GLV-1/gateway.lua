@@ -254,7 +254,7 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
     env.DOCUMENT_ROOT         = directory.directory
     env.CONTEXT_DOCUMENT_ROOT = directory.directory
     env.CONTENT_PREFIX        = ""
-    env.SCRIP_FILENAME        = prog
+    env.SCRIPT_FILENAME       = prog
   end
   
   return env
