@@ -170,17 +170,18 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
                         dconfi.env
                       )
                       
-  env.GEMINI_DOCUMENT_ROOT = directory.directory
-  env.GEMINI_URL_PATH      = location.path
-  env.GEMINI_URL           = uurl.toa(location)
-  env.GATEWAY_INTERFACE    = "CGI/1.1"
-  env.QUERY_STRING         = location.query or ""
-  env.REMOTE_ADDR          = auth._remote
-  env.REMOTE_HOST          = auth._remote
-  env.SCRIPT_NAME          = base
-  env.SERVER_NAME          = location.host
-  env.SERVER_PORT          = tostring(location.port)
-  env.SERVER_SOFTWARE      = "GLV-1.12556/1"
+  env.GEMINI_DOCUMENT_ROOT   = directory.directory
+  env.GEMINI_SCRIPT_FILENAME = program
+  env.GEMINI_URL_PATH        = location.path
+  env.GEMINI_URL             = uurl.toa(location)
+  env.GATEWAY_INTERFACE      = "CGI/1.1"
+  env.QUERY_STRING           = location.query or ""
+  env.REMOTE_ADDR            = auth._remote
+  env.REMOTE_HOST            = auth._remote
+  env.SCRIPT_NAME            = base
+  env.SERVER_NAME            = location.host
+  env.SERVER_PORT            = tostring(location.port)
+  env.SERVER_SOFTWARE        = "GLV-1.12556/1"
   
   local _,e      = location.path:find(fsys.basename(program),1,true)
   local pathinfo = e and location.path:sub(e+1,-1) or location.path
