@@ -67,41 +67,47 @@ address = "[::]:1965"
 -- sent to the Gemini client.  The following environment variables will be
 -- defined:
 --
--- GEMINI_DOCUMENT_ROOT Top level directory of site
--- GEMINI_URL_PATH      The path portion of the URL
--- GEMINI_URL           The full URL of the request
--- GATEWAY_INTERFACE    Will be set to "CGI/1.1"
--- PATH_INFO            May be set (see RFC-3875 for details)
--- PATH_TRANSLATED      May be set (see RFC-3875 for deatils)
--- QUERY_STRING         Will be set to the passed in query string, or ""
--- REMOTE_ADDR          IP address of the client
--- REMOTE_HOST          IP address of the client (allowed in RFC-3875)
--- REQUEST_METHOD       Will be empty, as there are no requests types
--- SCRIPT_NAME          Name of the script per the URL path
--- SERVER_NAME          Domain
--- SERVER_PORT          Server connection port number
--- SERVER_PROTOCOL      Will be set to "GEMINI"
--- SRVER_SOFTWARE       Will be set to "GLV-1.12556/1"
+-- GEMINI_DOCUMENT_ROOT   Top level directory of site
+-- GEMINI_SCRIPT_FILENAME The full path of the script being run
+-- GEMINI_URL_PATH        The path portion of the URL
+-- GEMINI_URL             The full URL of the request
+-- GATEWAY_INTERFACE      Will be set to "CGI/1.1"
+-- PATH_INFO              May be set (see RFC-3875 for details)
+-- PATH_TRANSLATED        May be set (see RFC-3875 for deatils)
+-- QUERY_STRING           Will be set to the passed in query string, or ""
+-- REMOTE_ADDR            IP address of the client
+-- REMOTE_HOST            IP address of the client (allowed in RFC-3875)
+-- REQUEST_METHOD         "", as there are no requests types
+-- SCRIPT_NAME            Name of the script per the URL path
+-- SERVER_NAME            Domain
+-- SERVER_PORT            Server connection port number
+-- SERVER_PROTOCOL        Will be set to "GEMINI"
+-- SRVER_SOFTWARE         Will be set to "GLV-1.12556/1"
+--
+-- AUTH_TYPE              If client certificate, set to "Certificate"
+-- REMOTE_USER            If client certificate, set to the subject CN
 --
 -- In addition, scripts written for a webserver can also be used.  If such
 -- scripts are used, addtional headers will be set:
 --
--- REQUEST_METHOD       Will be changed to "GET"
--- SERVER_PROTOCOL      Will be changed to "HTTP/1.0"
--- HTTP_ACCEPT          Will be set to "*/*"
--- HTTP_ACCEPT_LANGUAGE Will be set to "*"
--- HTTP_CONNECTION      Will be set to "close"
--- HTTP_REFERER         Will be set to ""
--- HTTP_USER_AGENT      Will be set to ""
+-- REQUEST_METHOD         Will be changed to "GET"
+-- SERVER_PROTOCOL        Will be changed to "HTTP/1.0"
+-- HTTP_ACCEPT            Will be set to "*/*"
+-- HTTP_ACCEPT_LANGUAGE   Will be set to "*"
+-- HTTP_CONNECTION        Will be set to "close"
+-- HTTP_REFERER           Will be set to ""
+-- HTTP_USER_AGENT        Will be set to ""
 --
 -- Also, if HTTP based CGI scripts expect Apache-specific headers to be set,
 -- those too can be specified and the following will be set:
 --
--- DOCUMENT_ROOT        Will be set to the top level directory being served
--- SCRIPT_FILENAME      The full path of the script being run
+-- DOCUMENT_ROOT          Will be set to the top level directory being served
+-- CONTEXT_DOCUMENT_ROOT  Will be set to the top level directory begin served
+-- CONTENT_PREFIX         Will be set to ""
+-- SCRIPT_FILENAME        The full path of the script being run
 --
--- If a certificate is required to run the script, and it is so desired, the
--- following environment variables will be set:
+-- If a certificate is required to run the script, and if it is so desired,
+-- the following environment variables can be set:
 --
 -- TLS_CIPHER                   Cipher being used
 -- TLS_VERSION                  Version of TLS being used
@@ -193,23 +199,27 @@ cgi =
 -- There's not much there, but I have simplemented the following headers
 -- that are sent to the SCGI program:
 --
--- CONTENT_LENGTH       Will be set to "0"
--- SCGI                 Will be set to "1"
--- GEMINI_DOCUMENT_ROOT Top level directory of site
--- GEMINI_URL_PATH      The path portion of the URL
--- GEMINI_URL           The full URL of the request
--- PATH_INFO            May be set (see RFC-3875 for details)
--- PATH_TRANSLATED      May be set (see RFC-3875 for deatils)
--- QUERY_STRING         Will be set to the passed in query string, or ""
--- REMOTE_ADDR          IP address of the client
--- REMOTE_HOST          IP address of the client (allowed in RFC-3875)
--- REQUEST_METHOD       Will be empty, as there are no requests types
--- SCRIPT_NAME          Name of the script per the URL path
--- SERVER_NAME          Domain
--- SERVER_PORT          Server connection port number
--- SERVER_PROTOCOL      Will be set to "GEMINI"
--- SRVER_SOFTWARE       Will be set to "GLV-1.12556/1"
-
+-- CONTENT_LENGTH         Will be set to "0"
+-- SCGI                   Will be set to "1"
+-- GEMINI_DOCUMENT_ROOT   Top level directory of site
+-- GEMINI_SCRIPT_FILENAME The full path of the script being run
+-- GEMINI_URL_PATH        The path portion of the URL
+-- GEMINI_URL             The full URL of the request
+-- PATH_INFO              May be set (see RFC-3875 for details)
+-- PATH_TRANSLATED        May be set (see RFC-3875 for deatils)
+-- QUERY_STRING           Will be set to the passed in query string, or ""
+-- REMOTE_ADDR            IP address of the client
+-- REMOTE_HOST            IP address of the client (allowed in RFC-3875)
+-- REQUEST_METHOD         "", as there are no requests types
+-- SCRIPT_NAME            Name of the script per the URL path
+-- SERVER_NAME            Domain
+-- SERVER_PORT            Server connection port number
+-- SERVER_PROTOCOL        Will be set to "GEMINI"
+-- SRVER_SOFTWARE         Will be set to "GLV-1.12556/1"
+--
+-- AUTH_TYPE              If client certificate, set to "Certificate"
+-- REMOTE_USER            If client certificate, set to the subject CN
+--
 -- In addition, scripts written for a webserver can also be used.  If such
 -- scripts are used, addtional headers will be set:
 --
