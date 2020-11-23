@@ -136,7 +136,10 @@ local function main(location,usecert,rcount)
       return main(newloc,usecert,rcount + 1)
     end
   elseif system == 'okay' then
-    io.stdout:write(ios:read("*a"))
+    repeat
+      local data = ios:read(8192)
+      if data then io.stdout:write(data) end
+    until not data
   end
   
   ios:close()
