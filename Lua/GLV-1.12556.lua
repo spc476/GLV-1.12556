@@ -337,13 +337,10 @@ local function main(ios)
     return
   end
   
-  -- ---------------------------------------------------------------
-  -- If a scheme isn't given, then a scheme of 'gemini:' is assumed.
-  -- ---------------------------------------------------------------
-  
   if not loc.scheme then
-    loc.scheme = 'gemini'
-    loc.port   = ios.__sock:addr().port
+    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
+    ios:close()
+    return
   end
   
   if not loc.host then
