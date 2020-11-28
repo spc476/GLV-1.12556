@@ -1,9 +1,21 @@
-
 # Control what autonomous agents (bots) should not crawl in your site.  
-# See http://www.robotstxt.org/robotstxt.html for more information.
-
+# See http://www.robotstxt.org/robotstxt.html for more information about the
+# actual robots.txt format.
+#
+# Since Gemini makes it impossible for user-agents to identify themselves,
+# Gemini itself defines the concept of "virtual user agent".  Currently,
+# the following user-agents are defined:
+#
+#	archiver
+#	indexer
+#	researcher
+#	webproxy
+#
+# An autonomous agent crawling Gemini should look for one of those terms
+# and follow the rules.  For more information about this, see
+# gemini://gemini.circumlunar.space/docs/companion/robots.gmi
+#
 # The following will block all autonomous agents from crawling your site.
 
 User-agent: *
 Disallow: /
-
