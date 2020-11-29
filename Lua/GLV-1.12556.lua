@@ -485,7 +485,7 @@ local function main(ios)
       local okay,status,mime,data = pcall(info.code.handler,info,auth,loc,match)
       if not okay then
         log(ios,40,request,reply(ios,"40 ",MSG[40],"\r\n"),auth)
-        syslog('error',"request=%s error=%s",request,status)
+        syslog('error',"request=%s error=%q",request,status)
       else
         log(ios,status,request,reply(ios,status," ",mime,"\r\n",data),auth)
       end
