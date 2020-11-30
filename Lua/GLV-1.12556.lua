@@ -87,12 +87,14 @@ do
     CONF._host,CONF._port = parse_address:match(CONF.address)
     if not CONF._host or not CONF._port then
       syslog('critical',"%s: syntax error with address",arg[1])
+      io.stderr:write(string.format("%s: syntax error with address\n",arg[1]))
       os.exit(exit.CONFIG,true)
     end
   end
   
   if not CONF.hosts then
     syslog('critical',"%s: at least one host needs to be defined",arg[1])
+    io.stderr:write(string.format("%s: at least one host needs to be defined\n",arg[1]))
     os.exit(exit.CONFIG,true)
   end
   
@@ -239,6 +241,7 @@ do
   
   if not next(CONF._interfaces) then
     syslog('critical',"%s: at least one host needs to be configured",arg[1])
+    io.stderr:write(string.format("%s: at least one host needs to be configured\n",arg[1]))
     os.exit(exit.CONFIG,true)
   end
   
@@ -522,6 +525,7 @@ local function init_interface(interface,info)
   end)
   
   if not okay then
+    syslog('critical',"%s: %s\n",arg[1],err)
     io.stderr:write(string.format("%s: %s\n",arg[1],err))
     os.exit(exit.OSERR,true)
   end
