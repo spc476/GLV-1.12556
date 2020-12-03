@@ -21,6 +21,7 @@
 -- ************************************************************************
 -- luacheck: globals syslog address cgi scgi hosts
 -- luacheck: globals mime index no_access extension
+-- luacheck: globals language charset
 -- luacheck: ignore 611
 
 -- ************************************************************************
