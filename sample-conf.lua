@@ -312,6 +312,19 @@ no_access = { "^%." }
 extension = ".gemini"
 
 -- ************************************************************************
+-- MIME text/* parameters langauge and charset
+-- optional, global, host, cgi, scgi, handler, no default value
+--
+-- The values given here are the assumed defaults if not given and are
+-- listed here for documentation purposes only.
+--
+-- XXX - cascade into cgi and scgi blocks.
+-- ************************************************************************
+
+charset  = "utf-8"
+language = "en"
+
+-- ************************************************************************
 -- Virtual hosts, mandatory, at least one host defined.
 -- ************************************************************************
 
@@ -325,40 +338,40 @@ hosts =
     -- Nothing, in which case a default address and port are used.
     --
     -- address = 'example.com'
-    --			A hostname can be specified.  The default port
-    --			will be 1965 (although see the above section
-    --			about the default address)
+    --                  A hostname can be specified.  The default port
+    --                  will be 1965 (although see the above section
+    --                  about the default address)
     --
     -- address = 'example.com:21965'
-    --			Set both the host and the port number.
+    --                  Set both the host and the port number.
     --
     -- address = ':21965'
-    --			This will use the default address, but change the
-    --			port number.
+    --                  This will use the default address, but change the
+    --                  port number.
     --
     -- address = '@'
-    --			This will set the host to the host currently
-    --			being defined.  This is a shortcut to cut down
-    --			on typing (and possibly making a mistake).
+    --                  This will set the host to the host currently
+    --                  being defined.  This is a shortcut to cut down
+    --                  on typing (and possibly making a mistake).
     --
     -- address = '@:21965'
-    --			Use the host currently being defined, but specify
-    --			the port number.
+    --                  Use the host currently being defined, but specify
+    --                  the port number.
     --
     -- address = '192.168.1.10'
-    --			You can specify IP addresses.
+    --                  You can specify IP addresses.
     --
     -- address = '192.168.1.10:21965'
-    --			IP address and port number.
+    --                  IP address and port number.
     --
     -- address = '[fc00::3]'
-    --			Also IPv6 addresses.
+    --                  Also IPv6 addresses.
     --
     -- address = '[fc00::3]:21965'
-    --			IPv6 address and port number.
+    --                  IPv6 address and port number.
     --
-    -- NOTE:	The use of '@' will involve a DNS request to resovle the
-    --		address.
+    -- NOTE:    The use of '@' will involve a DNS request to resovle the
+    --          address.
     -- -----------------------------------------------------------------
     
     address     = '@',
@@ -595,6 +608,8 @@ hosts =
         path      = ".*",
         module    = "GLV-1.handlers.filesystem",
         directory = "/var/exmple.org/share",
+        language = "en-US",
+        charset  = "us-ascii",
       }
     }
   }

@@ -61,7 +61,7 @@ end
 
 do
   local conffile,err = loadfile(arg[1],"t",CONF)
-
+  
   if not conffile then
     syslog('critical',"%s: %s",arg[1],err)
     io.stderr:write(string.format("%s: %s\n",arg[1],err))
@@ -157,6 +157,9 @@ do
         })
     end
     
+    conf.language = conf.language or CONF.language
+    conf.charset  = conf.charset  or CONF.charset
+    
     if not conf.authorization then
       conf.authorization = {}
     end
@@ -220,6 +223,9 @@ do
           mod.handler = notfound
           return
         end
+        
+        info.language = info.language or conf.language
+        info.charset  = info.charset  or conf.charset
         
         if mod.init then
           okay,err = mod.init(info,conf,CONF)
@@ -309,6 +315,26 @@ local function log(ios,status,request,bytes,auth)
         auth and auth.S or "",
         auth and auth.I or ""
   )
+end
+
+-- ************************************************************************
+
+local function setmime(conf,mimetype)
+  if not mimetype:find("^text/") then
+    return mimetype
+  end
+  
+  local param = ""
+
+  if conf.language and not mimetype:find("language=") then
+    param = param .. "; lang=" .. conf.language
+  end
+  
+  if conf.charset and not mimetype:find("charset=") then
+    param = param .. "; charset=" .. conf.charset
+  end
+  
+  return mimetype .. param
 end
 
 -- ************************************************************************
@@ -490,7 +516,7 @@ local function main(ios)
         log(ios,40,request,reply(ios,"40 ",MSG[40],"\r\n"),auth)
         syslog('error',"request=%s error=%q",request,status)
       else
-        log(ios,status,request,reply(ios,status," ",mime,"\r\n",data),auth)
+        log(ios,status,request,reply(ios,status," ",setmime(info,mime),"\r\n",data),auth)
       end
       ios:close()
       return
