@@ -53,7 +53,7 @@ local segment = P'../'         * Cc''         * Cc(false) -- A
               + P'/..' * P(-1) * Cc'/'        * Cc(true)
               + P'..'  * P(-1) * Cc''         * Cc(false) -- D
               + P'.'   * P(-1) * Cc''         * Cc(false)
-              + C(P'/'^-1 * (R"!~" - P'/')^1) * Cc(false) -- E
+              + C(P'/'^-1 * (P(1) - P'/')^1)  * Cc(false) -- E
               + C'/'                          * Cc(false)
               
 rm_dot_segs = Cf(Cc"" * (Cg(segment))^1,function(acc,capture,trim)
@@ -139,6 +139,10 @@ end
 
 -- ********************************************************************
 
+local function tohex(c)
+  return string.format("%%%02X",string.byte(c))
+end
+
 local unsafe     = P" "  / "%%20"
                  + P"#"  / "%%23"
                  + P"%"  / "%%25"
@@ -152,6 +156,7 @@ local unsafe     = P" "  / "%%20"
                  + P"|"  / "%%7C"
                  + P"}"  / "%%7D"
                  + P'"'  / "%%22"
+                 + R("\0\31","\127\255") / tohex
 local char_auth  = P"?"  / "%%3F"
                  + P"@"  / "%%40"
                  + unsafe
