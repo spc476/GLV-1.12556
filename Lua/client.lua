@@ -24,7 +24,8 @@
 
 local nfl    = require "org.conman.nfl"
 local tls    = require "org.conman.nfl.tls"
-local url    = require "org.conman.parsers.url"
+local url    = require "org.conman.parsers.iri"
+local idn    = require "org.conman.idn"
 local uurl   = require "GLV-1.url-util"
 local getopt = require "org.conman.getopt".getopt
 local lpeg   = require "lpeg"
@@ -69,7 +70,8 @@ local function main(location,usecert,rcount)
     os.exit(1)
   end
   
-  local ios = tls.connect(loc.host,loc.port,nil,function(conf)
+  io.stderr:write(string.format("loc=%q encoded=%q\n",loc.host,idn.encode(loc.host)))
+  local ios = tls.connect(idn.encode(loc.host),loc.port,nil,function(conf)
     if usecert then
       if not conf:cert_file(CERT)
       or not conf:key_file(KEY) then
