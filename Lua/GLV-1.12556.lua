@@ -55,7 +55,7 @@ end
 -- ************************************************************************
 
 if #arg == 0 then
-  io.stderr:write(string.format("usage: %s confifile\n",arg[0]))
+  io.stderr:write(string.format("usage: %s config\n",arg[0]))
   os.exit(exit.USAGE,true)
 end
 
