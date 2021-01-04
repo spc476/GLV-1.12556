@@ -547,7 +547,7 @@ local function init_interface(interface,info)
       end
     end
     
-    return conf:protocols "all"
+    return conf:protocols "tlsv1.2,tlsv1.3"
   end)
   
   if not okay then
