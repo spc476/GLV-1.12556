@@ -71,6 +71,7 @@ local function main(location,usecert,rcount)
   end
   
   io.stderr:write(string.format("loc=%q encoded=%q\n",loc.host,idn.encode(loc.host)))
+  
   local ios = tls.connect(idn.encode(loc.host),loc.port,nil,function(conf)
     if usecert then
       if not conf:cert_file(CERT)
@@ -96,6 +97,7 @@ local function main(location,usecert,rcount)
   local okay,err = ios:write(location,"\r\n")
   if not okay then
     io.stderr:write("ios:write() = ",err,"\n")
+    ios:close()
     return
   end
   
@@ -123,6 +125,7 @@ local function main(location,usecert,rcount)
   
   if system == 'auth' then
     if status == 'required' and CERT and KEY then
+      ios:close()
       return main(location,true)
     end
     
@@ -133,18 +136,23 @@ local function main(location,usecert,rcount)
       local where  = url:match(info)
       local new    = uurl.merge(loc,where)
       local newloc = uurl.toa(new)
-    
+      
       io.stderr:write("--- ",newloc,"\n")
+      ios:close()
       return main(newloc,usecert,rcount + 1)
     end
+    
   elseif system == 'okay' then
+    io.stderr:write(string.format("cipher=%q version=%s strength=%d\n",ios.__ctx:conn_cipher(),ios.__ctx:conn_version(),ios.__ctx:conn_cipher_strength()))
+    io.stderr:write(string.format("servername=%q alpn=%q\n",ios.__ctx:conn_servername(),ios.__ctx:conn_alpn_selected()))
     repeat
       local data = ios:read(8192)
       if data then io.stdout:write(data) end
     until not data
+    ios:close()
+  else
+    ios:close()
   end
-  
-  ios:close()
 end
 
 -- ************************************************************************
