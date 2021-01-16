@@ -261,22 +261,29 @@ end
 
 -- ************************************************************************
 
-function handle_output(program,hdrs,data)
-  local headers = parse_headers:match(hdrs)
+function handle_output(ios,inp,program)
+  local headers = inp:read("h")
   
   if not headers then
     syslog('error',"%s: is this a *GatewayInterface program?",program)
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
+  
+  local status = headers['Status'] or 20
   
   if headers['Location'] then
-    local status = headers['Status'] or 31
-    return status,headers['Location'],""
+    ios:write(status," ",headers['Location'],"\r\n")
+  else
+    ios:write(status," ",headers['Content-Type'] or "text/plain","\r\n")
+  
+    repeat
+      local data = inp:read(1024)
+      if data then ios:write(data) end
+    until not data
   end
   
-  local status  = headers['Status'] or 20
-  local mime    = headers['Content-Type'] or "text/plain"
-  return status,mime,data
+  return headers['Status'] or 20
 end
 
 -- ************************************************************************

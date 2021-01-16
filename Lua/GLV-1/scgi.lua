@@ -35,20 +35,22 @@ local tostring = tostring
 
 -- ************************************************************************
 
-return function(auth,program,directory,base,location)
+return function(auth,program,directory,base,location,ios)
   local gconf = require "CONF".scgi
   local hconf = require "CONF".hosts[location.host].scgi
   local dconf = directory.scgi
   
   if not gconf and not hconf and not dconf then
     syslog('error',"SCGI called, but SCGI not configured!")
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   if dconf == false
   or hconf == false and dconf == nil then
     syslog('error',"SCGI called, but SCGI not configured!")
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   local env  = gi.setup_env(auth,program,base,location,directory,'scgi',hconf,gconf)
@@ -62,18 +64,21 @@ return function(auth,program,directory,base,location)
   local scgiurl,err = fsys.readlink(program)
   if not scgiurl then
     syslog('error',"SCGI: readlink() = %s",errno[err])
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   local scgiloc = url:match(scgiurl)
   if not scgiloc then
     syslog('error',"SCGI: bad link %q",scgiurl)
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   if scgiloc.scheme ~= 'scgi' then
     syslog('error',"SCGI: bad scheme %q",scgiurl)
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   local addr
@@ -81,28 +86,29 @@ return function(auth,program,directory,base,location)
   if scgiloc.host then
     if not scgiloc.port then
       syslog('error',"SCGI: %q missing port",scgiurl)
-      return 40,MSG[40],''
+      ios:write("40 ",MSG[40],"\r\n")
+      return 40
     end
     
     addr = net.address2(scgiloc.host,'any','tcp',scgiloc.port)[1]
   else
     if scgiloc.path == "" then
       syslog('error',"SCGI: %q missing path",scgiurl)
-      return 40,MSG[40],''
+      ios:write("40 ",MSG[40],"\r\n")
+      return 40
     end
     
     addr = net.address(scgiloc.path,'tcp')
   end
   
-  local ios = tcp.connecta(addr,5)
-  if not ios then
-    return 40,MSG[40],""
+  local inp = tcp.connecta(addr,5)
+  if not inp then
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
-  ios:write(tostring(#tenv),":",tenv,",0:,")
-  local hdrs = ios:read("h")
-  local data = ios:read("a")
-  ios:close()
-  
-  return gi.handle_output(program,hdrs,data)
+  inp:write(tostring(#tenv),":",tenv,",0:,")
+  local status = gi.handle_output(ios,inp,program)
+  inp:close()
+  return status
 end

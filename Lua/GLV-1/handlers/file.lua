@@ -58,28 +58,37 @@ end
 
 -- ************************************************************************
 
-function handler(conf)
+function handler(conf,_,_,_,ios)
   local function contents(mime)
     local f,err = io.open(conf.file,'rb')
     if not f then
       syslog('error',"%s: %s",conf.file,err)
-      return 40,MSG[40],""
+      ios:write("40 ",MSG[40],"\r\n")
+      return 40
     end
     
-    local data = f:read("*a")
+    ios:write("20 ",mime,"\r\n")
+    
+    repeat
+      local data = f:read(1024)
+      if data then ios:write(data) end
+    until not data
+    
     f:close()
-    return 20,mime,data
+    return 20
   end
   
   if fsys.access(conf.file,'x') then
     syslog('error',"%s: can only serve non-executable files",conf.file)
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   local okay,err = fsys.access(conf.file,'r')
   if not okay then
     syslog('error',"%s: %s",conf.file,errno[err])
-    return 40,MSG[40],""
+    ios:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   if conf.file:match(conf.extension) then

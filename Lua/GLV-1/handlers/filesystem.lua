@@ -104,7 +104,7 @@ end
 
 -- ************************************************************************
 
-function handler(conf,auth,loc,match)
+function handler(conf,auth,loc,match,ios)
   local function read_file(file,base)
     local function contents(mime)
       if mime == "" then
@@ -115,20 +115,28 @@ function handler(conf,auth,loc,match)
       local f,err = io.open(file,"rb")
       if not f then
         syslog('error',"%s: %s",file,err)
-        return 40,MSG[40],""
+        ios:write("40 ",MSG[40],"\r\n")
+        return 40
       end
       
-      local data = f:read("*a")
+      ios:write("20 ",mime,"\r\n")
+      
+      repeat
+        local data = f:read(1024)
+        if data then ios:write(data) end
+      until not data
+      
       f:close()
-      return 20,mime,data
+      return 20
     end
     
     if fsys.access(file,"rx") then
-      return cgi(auth,file,conf,base,loc)
+      return cgi(auth,file,conf,base,loc,ios)
     end
     
     if not fsys.access(file,"r") then
-      return 51,MSG[51],""
+      ios:write("51 ",MSG[51],"\r\n")
+      return 51
     end
     
     -- ---------------------------------------------------------------------
@@ -139,7 +147,8 @@ function handler(conf,auth,loc,match)
     local _,e      = loc.path:find(fsys.basename(file),1,true)
     local pathinfo = e and loc.path:sub(e+1,-1) or loc.path
     if e and pathinfo ~= "" then
-      return 51,MSG[51],""
+      ios:write("51 ",MSG[51],"\r\n")
+      return 51
     end
     return contents(conf.mime[fsys.extension(file)] or magic(file))
   end
@@ -161,7 +170,8 @@ function handler(conf,auth,loc,match)
     
     for _,pattern in ipairs(conf.no_access) do
       if segment:match(pattern) then
-        return 51,MSG[51],""
+        ios:write("51 ",MSG[51],"\r\n")
+        return 51
       end
     end
     
@@ -170,7 +180,8 @@ function handler(conf,auth,loc,match)
     
     if not info then
       syslog('error',"fsys.stat(%q) = %s",name,errno[err])
-      return 51,MSG[51],""
+      ios:write("51 ",MSG[51],"\r\n")
+      return 51
     end
     
     if info.mode.type == 'dir' then
@@ -179,7 +190,8 @@ function handler(conf,auth,loc,match)
       -- -------------------------------------------
       if not fsys.access(name,"x") then
         syslog('error',"access(%q) failed",dir)
-        return 51,MSG[51],""
+        ios:write("51 ",MSG[51],"\r\n")
+        return 51
       end
     elseif info.mode.type == 'file' then
       local _,e  = loc.path:find(segment,1,true)
@@ -188,9 +200,10 @@ function handler(conf,auth,loc,match)
     elseif info.mode.type == 'link' then
       local _,e  = loc.path:find(segment,1,true)
       local base = loc.path:sub(1,e)
-      return scgi(auth,name,conf,base,loc)
+      return scgi(auth,name,conf,base,loc,ios)
     else
-      return 51,MSG[51],""
+      ios:write("51 ",MSG[51],"\r\n")
+      return 51
     end
   end
   
@@ -203,7 +216,8 @@ function handler(conf,auth,loc,match)
   -- ----------------------------------------------------------------------
   
   if not loc.path:match "/$" then
-    return 31,uurl.esc_path:match(loc.path .. "/"),""
+    ios:write("31 ",uurl.esc_path:match(loc.path .. "/"),"\r\n")
+    return 31
   end
   
   -- ------------------------
@@ -282,7 +296,12 @@ function handler(conf,auth,loc,match)
   table.insert(res,"---------------------------")
   table.insert(res,"GLV-1.12556")
   
-  return 20,"text/gemini",table.concat(res,"\r\n") .. "\r\n"
+  ios:write(
+        "20 text/gemini\r\n",
+        table.concat(res,"\r\n"),
+        "\r\n"
+  )
+  return 20
 end
 
 -- ************************************************************************

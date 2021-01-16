@@ -319,26 +319,6 @@ end
 
 -- ************************************************************************
 
-local function setmime(conf,mimetype)
-  if not mimetype:find("^text/") then
-    return mimetype
-  end
-  
-  local param = ""
-
-  if conf.language and not mimetype:find("language=") then
-    param = param .. "; lang=" .. conf.language
-  end
-  
-  if conf.charset and not mimetype:find("charset=") then
-    param = param .. "; charset=" .. conf.charset
-  end
-  
-  return mimetype .. param
-end
-
--- ************************************************************************
-
 local function main(ios)
   ios:_handshake()
   
@@ -508,23 +488,41 @@ local function main(ios)
   -- Run through our installed handlers
   -- -------------------------------------
   
+  local found = false
+  local okay
+  local status
+  
   for _,info in ipairs(CONF.hosts[loc.host].handlers) do
     local match = table.pack(loc.path:match(info.path))
     if #match > 0 then
-      local okay,status,mime,data = pcall(info.code.handler,info,auth,loc,match)
+      found       = true
+      okay,status = pcall(info.code.handler,info,auth,loc,match,ios)
+      
       if not okay then
-        log(ios,40,request,reply(ios,"40 ",MSG[40],"\r\n"),auth)
-        syslog('error',"request=%s error=%q",request,status)
-      else
-        log(ios,status,request,reply(ios,status," ",setmime(info,mime),"\r\n",data),auth)
+        syslog('error',"request=%q error=%q",request,status)
+        status = 41
       end
-      ios:close()
-      return
+      
+      break
     end
   end
   
-  syslog('error',"no handlers for %q found---possible configuration error?",request)
-  log(ios,41,request,reply(ios,"41 ",MSG[41],"\r\n"),auth)
+  if not found then
+    syslog('error',"no handlers for %q found---possible configuration error?",request)
+    ios:write("41 ",MSG[41],"\r\n")
+    status = 41
+  end
+  
+  syslog(
+          'info',
+          "remote=%s status=%d request=%q bytes=%d subject=%q issuer=%q",
+          ios.__remote.addr,
+          status,
+          request,
+          ios.__wbytes,
+          auth and auth.S or "",
+          auth and auth.I or ""
+  )
   ios:close()
 end
 

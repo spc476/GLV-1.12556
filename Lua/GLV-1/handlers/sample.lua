@@ -28,18 +28,18 @@ local string = require "string"
 _ENV = {}
 
 -- ************************************************************************
--- Usage:	okay[,err] = sample.init(iconf,hconf,gconf)
--- Desc:	Do any initialization of the module
--- Input:	iconf (table) instance configuration block
+-- Usage:       okay[,err] = sample.init(iconf,hconf,gconf)
+-- Desc:        Do any initialization of the module
+-- Input:       iconf (table) instance configuration block
 --              hconf (table) host configuation block
 --              gconf (table) global configuration block
--- Return:	okay (boolean) true if okay, false if any error
---		err (string) error message
+-- Return:      okay (boolean) true if okay, false if any error
+--              err (string) error message
 --
--- NOTE:	This function is optional.
---		Also, any information local to an instance can be stored
---		in the passed in configuration block.
---		Not all modules will use the hconf or gconf block.
+-- NOTE:        This function is optional.
+--              Also, any information local to an instance can be stored
+--              in the passed in configuration block.
+--              Not all modules will use the hconf or gconf block.
 -- ************************************************************************
 
 function init(iconf)
@@ -48,19 +48,20 @@ function init(iconf)
 end
 
 -- ************************************************************************
--- Usage:	status,mime,data = sample.handler(conf,auth,loc,match)
--- Desc:	Handle the request
--- Input:	conf (table) configuration block from configuration file
---		auth (table) authentication information
--- 		loc (table) Broken down URL from the request
---		match (table) matched data from the path pattern
--- Return:	status (integer) Gemini status code
---		mime (string) MIME type for content, message for other
---		data (string) content if any
+-- Usage:       status = sample.handler(conf,auth,loc,match)
+-- Desc:        Handle the request
+-- Input:       conf (table) configuration block from configuration file
+--              auth (table) authentication information
+--              loc (table) Broken down URL from the request
+--              match (table) matched data from the path pattern
+--              ios (object/iostream) Input/Output stream
+-- Return:      status (integer) Gemini status code
 -- ************************************************************************
 
-function handler(conf,auth,loc,match)
-  return 20,'text/plain',string.format([[
+function handler(conf,auth,loc,match,ios)
+  ios:write(
+        "20 text/plain\r\n",
+        string.format([[
 conf.path=%q
 conf.module=%q
 auth.issuer=%q
@@ -71,26 +72,27 @@ loc.path=%q
 loc.query=%q
 match[1]=%q
 ]],
-	conf.path,
-	conf.module,
-	auth.issuer  or "",
-	auth.subject or "",
-	loc.host,
-	loc.port,
-	loc.path,
-	loc.query or "",
-	match[1]  or ""
-  )
+        conf.path,
+        conf.module,
+        auth.issuer  or "",
+        auth.subject or "",
+        loc.host,
+        loc.port,
+        loc.path,
+        loc.query or "",
+        match[1]  or ""
+  ))
+  return 20
 end
 
 -- ************************************************************************
--- Usage:	okay,err = sample.fini(conf)
--- Desc;	Cleanup resources for module
--- Input:	conf (table) configuration block from configuration file
--- Return:	okay (boolean) true if okay, false if any error
---		err (string) error message
+-- Usage:       okay,err = sample.fini(conf)
+-- Desc;        Cleanup resources for module
+-- Input:       conf (table) configuration block from configuration file
+-- Return:      okay (boolean) true if okay, false if any error
+--              err (string) error message
 --
--- NOTE:	This function is optional.
+-- NOTE:        This function is optional.
 -- ************************************************************************
 
 function fini(conf)

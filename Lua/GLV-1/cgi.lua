@@ -100,7 +100,7 @@ end
 
 -- ************************************************************************
 
-return function(auth,program,directory,base,location)
+return function(auth,program,directory,base,location,out)
   local gconf = require "CONF".cgi
   local hconf = require "CONF".hosts[location.host].cgi
   local dconf = directory.cgi
@@ -115,19 +115,22 @@ return function(auth,program,directory,base,location)
   
   if not gconf and not hconf and not dconf then
     syslog('error',"CGI script called, but CGI not configured!")
-    return 40,MSG[40],""
+    out:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   if dconf == false
   or hconf == false and dconf == nil then
     syslog('error',"CGI script called, but CGI not configured!")
-    return 40,MSG[40],""
+    out:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   local pipe,err1 = fsys.pipe()
   if not pipe then
     syslog('error',"CGI pipe: %s",errno[err1])
-    return 40,MSG[40],""
+    out:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   pipe.read:setvbuf('no') -- buffering kills the event loop
@@ -136,7 +139,8 @@ return function(auth,program,directory,base,location)
   
   if not child then
     syslog('error',"process.fork() = %s",errno[err])
-    return 40,MSG[40],""
+    out:write("40 ",MSG[40],"\r\n")
+    return 40
   end
   
   -- =========================================================
@@ -201,27 +205,24 @@ return function(auth,program,directory,base,location)
   -- =========================================================
   
   pipe.write:close()
-  local inp  = fdtoios(pipe.read)
-  local hdrs = inp:read("h")
-  local data = inp:read("a")
+  local inp    = fdtoios(pipe.read)
+  local status = gi.handle_output(out,inp,program)
   inp:close()
-  
+    
   local info,err2 = process.wait(child)
   
   if not info then
     syslog('error',"process.wait() = %s",errno[err2])
-    return 40,MSG[40],""
+    return status
   end
   
   if info.status == 'normal' then
-    if info.rc == 0 then
-      return gi.handle_output(program,hdrs,data)
-    else
+    if info.rc ~= 0 then
       syslog('warning',"program=%q status=%d",program,info.rc)
-      return 40,MSG[40],""
     end
   else
     syslog('error',"program=%q status=%s description=%s",program,info.status,info.description)
-    return 40,MSG[40],""
   end
+  
+  return status
 end
