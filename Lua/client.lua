@@ -146,7 +146,7 @@ local function main(location,usecert,rcount)
     io.stderr:write(string.format("cipher=%q version=%s strength=%d\n",ios.__ctx:conn_cipher(),ios.__ctx:conn_version(),ios.__ctx:conn_cipher_strength()))
     io.stderr:write(string.format("servername=%q alpn=%q\n",ios.__ctx:conn_servername(),ios.__ctx:conn_alpn_selected()))
     repeat
-      local data = ios:read(8192)
+      local data = ios:read("*b")
       if data then io.stdout:write(data) end
     until not data
     ios:close()
