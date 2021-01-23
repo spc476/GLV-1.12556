@@ -534,4 +534,4 @@ for host,conf in pairs(CONF.hosts) do
   end
 end
 
-os.exit(true,true)
+os.exit(exit.OK,true)
