@@ -285,233 +285,190 @@ end
 
 -- ************************************************************************
 
-local function reply(ios,...)
-  local bytes = 0
-  
-  for i = 1 , select('#',...) do
-    local item = select(i,...)
-    bytes = bytes + #tostring(item)
-  end
-  
-  local okay,err = ios:write(...)
-  
-  if not okay then
-    syslog('error',"ios:write() = %s",err)
-  end
-  
-  return bytes
-end
-
--- ************************************************************************
-
-local function log(ios,status,request,bytes,auth)
-  syslog(
-        'info',
-        "remote=%s status=%d request=%q bytes=%d subject=%q issuer=%q",
-        ios.__remote.addr,
-        status,
-        request,
-        bytes,
-        auth and auth.S or "",
-        auth and auth.I or ""
-  )
-end
-
--- ************************************************************************
-
 local function main(ios)
-  ios:_handshake()
-  
-  local request = ios:read("*l")
-  if not request then
-    log(ios,59,"",reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  -- -------------------------------------------------
-  -- Current Gemini spec lists URLS max limit as 1024.
-  -- -------------------------------------------------
-  
-  if #request > 1024 then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  local loc = url:match(request)
-  if not loc then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  if not loc.scheme then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  if not loc.host then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  if loc.scheme ~= 'gemini'
-  or not CONF.hosts[loc.host]
-  or loc.port   ~= CONF.hosts[loc.host].port then
-    log(ios,53,request,reply(ios,"53 ",MSG[53],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  -- ---------------------------------------------------------------
-  -- user portion of a URL is invalid.
-  -- ---------------------------------------------------------------
-  
-  if loc.user then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  -- ---------------------------------------------------------------
-  -- Relative path resolution is the domain of the client, not the
-  -- server.  So reject any requests with relative path elements.
-  -- Also check for multiple '//' in a path, which I'm treating
-  -- as invalid.
-  -- ---------------------------------------------------------------
-  
-  if loc.path:match "/%.%./" or loc.path:match "/%./" or loc.path:match "//+" then
-    log(ios,59,request,reply(ios,"59 ",MSG[59],"\r\n"))
-    ios:close()
-    return
-  end
-  
-  -- --------------------------------------------------------------
-  -- Do our authorization checks.  This way, we can get consistent
-  -- authorization checks across handlers.  We do this before anything else
-  -- (even redirects) to prevent unintended leakage of data (resources that
-  -- might be available under authorization)
-  -- --------------------------------------------------------------
-  
+  local request
   local auth =
   {
     _remote = ios.__remote.addr,
     _port   = ios.__remote.port
   }
   
-  for _,rule in ipairs(CONF.hosts[loc.host].authorization) do
-    if loc.path:match(rule.path) then
-      if not ios.__ctx:peer_cert_provided() then
-        log(ios,60,request,reply(ios,"60 ",MSG[60],"\r\n"))
-        ios:close()
-        return
-      end
-      
-      auth._provided = true
-      auth._ctx      = ios.__ctx
-      auth.I         = ios.__ctx:peer_cert_issuer()
-      auth.S         = ios.__ctx:peer_cert_subject()
-      auth.issuer    = cert_parse:match(auth.I)
-      auth.subject   = cert_parse:match(auth.S)
-      auth.notbefore = ios.__ctx:peer_cert_notbefore()
-      auth.notafter  = ios.__ctx:peer_cert_notafter()
-      auth.now       = os.time()
-      
-      if auth.now < auth.notbefore then
-        log(ios,62,request,reply(ios,"62 ",MSG[62],"\r\n"),auth)
-        ios:close()
-        return
-      end
-      
-      if auth.now > auth.notafter then
-        log(ios,62,request,reply(ios,"62 ",MSG[62],"\r\n"),auth)
-        ios:close()
-        return
-      end
-      
-      local okay,allowed = pcall(rule.check,auth.issuer,auth.subject,loc)
-      if not okay then
-        syslog('error',"%s: %s",rule.path,allowed)
-        log(ios,40,request,reply(ios,"40 ",MSG[40],"\r\n"),auth)
-        ios:close()
-        return
-      end
-      
-      if not allowed then
-        log(ios,61,request,reply(ios,"61 ",MSG[61],"\r\n"),auth)
-        ios:close()
-        return
-      end
-      
-      break
+  local function handler()
+    ios:_handshake()
+    
+    request = ios:read("*l")
+    if not request then
+      ios:write("50 ",MSG[59],"\r\n")
+      return 59
     end
-  end
-  
-  -- -------------------------------------------------------------
-  -- We handle the various redirections here, the temporary ones,
-  -- the permanent ones, and those that are gone gone gone ...
-  -- I'm still unsure of the order I want these in ...
-  -- -------------------------------------------------------------
-  
-  for _,rule in ipairs(CONF.hosts[loc.host].redirect.temporary) do
-    local match = table.pack(loc.path:match(rule[1]))
-    if #match > 0 then
-      local new = redirect_subst:match(rule[2],1,match)
-      log(ios,30,request,reply(ios,"30 ",new,"\r\n"),auth)
-      ios:close()
-      return
+    
+    -- -------------------------------------------------
+    -- Current Gemini spec lists URLS max limit as 1024.
+    -- -------------------------------------------------
+    
+    if #request > 1024 then
+      ios:write("59 ",MSG[59],"\r\n")
+      return 59
     end
-  end
-  
-  for _,rule in ipairs(CONF.hosts[loc.host].redirect.permanent) do
-    local match = table.pack(loc.path:match(rule[1]))
-    if #match > 0 then
-      local new = redirect_subst:match(rule[2],1,match)
-      log(ios,31,request,reply(ios,"31 ",new,"\r\n"),auth)
-      ios:close()
-      return
+    
+    local loc = url:match(request)
+    if not loc then
+      ios:write("59 ",MSG[59],"\r\n")
+      return 59
     end
-  end
-  
-  for _,pattern in ipairs(CONF.hosts[loc.host].redirect.gone) do
-    if loc.path:match(pattern) then
-      log(ios,52,request,reply(ios,"52 ",MSG[52],"\r\n"),auth)
-      ios:close()
-      return
+    
+    if not loc.scheme then
+      ios:write("59 ",MSG[59],"\r\n")
+      return 59
     end
-  end
-  
-  -- -------------------------------------
-  -- Run through our installed handlers
-  -- -------------------------------------
-  
-  local found = false
-  local okay
-  local status
-  
-  for _,info in ipairs(CONF.hosts[loc.host].handlers) do
-    local match = table.pack(loc.path:match(info.path))
-    if #match > 0 then
-      found       = true
-      okay,status = pcall(info.code.handler,info,auth,loc,match,ios)
-      
-      if not okay then
-        syslog('error',"request=%q error=%q",request,status)
-        status = 41
+    
+    if not loc.host then
+      ios:write("59 ",MSG[59],"\r\n")
+      return 59
+    end
+    
+    if loc.scheme ~= 'gemini'
+    or not CONF.hosts[loc.host]
+    or loc.port   ~= CONF.hosts[loc.host].port then
+      ios:write("53 ",MSG[53],"\r\n")
+      return 53
+    end
+    
+    -- ---------------------------------------------------------------
+    -- user portion of a URL is invalid.
+    -- ---------------------------------------------------------------
+    
+    if loc.user then
+      ios:write("59 ",MSG[59],"\r\n")
+      return 59
+    end
+    
+    -- ---------------------------------------------------------------
+    -- Relative path resolution is the domain of the client, not the
+    -- server.  So reject any requests with relative path elements.
+    -- Also check for multiple '//' in a path, which I'm treating
+    -- as invalid.
+    -- ---------------------------------------------------------------
+    
+    if loc.path:match "/%.%./" or loc.path:match "/%./" or loc.path:match "//+" then
+      ios:write("50 ",MSG[59],"\r\n")
+      return 59
+    end
+    
+    -- --------------------------------------------------------------
+    -- Do our authorization checks.  This way, we can get consistent
+    -- authorization checks across handlers.  We do this before anything else
+    -- (even redirects) to prevent unintended leakage of data (resources that
+    -- might be available under authorization)
+    -- --------------------------------------------------------------
+    
+    for _,rule in ipairs(CONF.hosts[loc.host].authorization) do
+      if loc.path:match(rule.path) then
+        if not ios.__ctx:peer_cert_provided() then
+          ios:write("60 ",MSG[60],"\r\n")
+          return 60
+        end
+        
+        auth._provided = true
+        auth._ctx      = ios.__ctx
+        auth.I         = ios.__ctx:peer_cert_issuer()
+        auth.S         = ios.__ctx:peer_cert_subject()
+        auth.issuer    = cert_parse:match(auth.I)
+        auth.subject   = cert_parse:match(auth.S)
+        auth.notbefore = ios.__ctx:peer_cert_notbefore()
+        auth.notafter  = ios.__ctx:peer_cert_notafter()
+        auth.now       = os.time()
+        
+        if auth.now < auth.notbefore then
+          ios:write("62 ",MSG[62],"\r\n")
+          return 62
+        end
+        
+        if auth.now > auth.notafter then
+          ios:write("62 ",MSG[62],"\r\n")
+          return 62
+        end
+        
+        local okay,allowed = pcall(rule.check,auth.issuer,auth.subject,loc)
+        if not okay then
+          syslog('error',"%s: %s",rule.path,allowed)
+          ios:write("40 ",MSG[40],"\r\n")
+          return 40
+        end
+        
+        if not allowed then
+          ios:write("61 ",MSG[61],"\r\n")
+          return 61
+        end
+        
+        break
       end
-      
-      break
     end
+    
+    -- -------------------------------------------------------------
+    -- We handle the various redirections here, the temporary ones,
+    -- the permanent ones, and those that are gone gone gone ...
+    -- I'm still unsure of the order I want these in ...
+    -- -------------------------------------------------------------
+    
+    for _,rule in ipairs(CONF.hosts[loc.host].redirect.temporary) do
+      local match = table.pack(loc.path:match(rule[1]))
+      if #match > 0 then
+        local new = redirect_subst:match(rule[2],1,match)
+        ios:write("30 ",new,"\r\n")
+        return 30
+      end
+    end
+    
+    for _,rule in ipairs(CONF.hosts[loc.host].redirect.permanent) do
+      local match = table.pack(loc.path:match(rule[1]))
+      if #match > 0 then
+        local new = redirect_subst:match(rule[2],1,match)
+        ios:write("31 ",new,"\r\n")
+        return 31
+      end
+    end
+    
+    for _,pattern in ipairs(CONF.hosts[loc.host].redirect.gone) do
+      if loc.path:match(pattern) then
+        ios:write("52 ",MSG[52],"\r\n")
+        return 52
+      end
+    end
+    
+    -- -------------------------------------
+    -- Run through our installed handlers
+    -- -------------------------------------
+    
+    local found = false
+    local okay
+    local status
+    
+    for _,info in ipairs(CONF.hosts[loc.host].handlers) do
+      local match = table.pack(loc.path:match(info.path))
+      if #match > 0 then
+        found       = true
+        okay,status = pcall(info.code.handler,info,auth,loc,match,ios)
+        
+        if not okay then
+          syslog('error',"request=%q error=%q",request,status)
+          status = 41
+        end
+        
+        break
+      end
+    end
+    
+    if not found then
+      syslog('error',"no handlers for %q found---possible configuration error?",request)
+      ios:write("41 ",MSG[41],"\r\n")
+      status = 41
+    end
+    
+    return status
   end
   
-  if not found then
-    syslog('error',"no handlers for %q found---possible configuration error?",request)
-    ios:write("41 ",MSG[41],"\r\n")
-    status = 41
-  end
+  local status = handler()
   
   syslog(
           'info',
