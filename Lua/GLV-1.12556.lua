@@ -30,6 +30,7 @@ local magic     = require "org.conman.fsys.magic"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
 local ip        = require "org.conman.parsers.ip-text"
+local seed      = require "org.conman.math".seed
 local lpeg      = require "lpeg"
 local url       = require "org.conman.parsers.url" * lpeg.P(-1)
 local MSG       = require "GLV-1.MSG"
@@ -37,6 +38,7 @@ local MSG       = require "GLV-1.MSG"
 local CONF = {}
 
 magic:flags("mime")
+math.randomseed(seed())
 
 -- ************************************************************************
 
