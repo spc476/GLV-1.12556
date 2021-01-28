@@ -61,16 +61,19 @@ local function main(location,usecert,rcount)
   local loc = url:match(location)
   
   if not loc then
-    io.stderr:write("Parse error with given URL\n")
+    io.stderr:write("Error: Parse error with given URL\n")
     os.exit(1)
   end
   
   if loc.scheme ~= 'gemini' then
-    io.stderr:write(string.format("%s: scheme %q not supported\n",location,loc.scheme))
+    io.stderr:write(string.format("Error: %s: scheme %q not supported\n",location,loc.scheme))
     os.exit(1)
   end
   
-  io.stderr:write(string.format("loc=%q encoded=%q\n",loc.host,idn.encode(loc.host)))
+  io.stderr:write(
+        string.format("Location: %s\n",loc.host),
+        string.format("Encoded: %s\n",idn.encode(loc.host))
+  )
   
   local ios = tls.connect(idn.encode(loc.host),loc.port,nil,function(conf)
     if usecert then
@@ -90,38 +93,37 @@ local function main(location,usecert,rcount)
   end)
   
   if not ios then
-    io.stderr:write("cannot connect to ",loc.host,"\n")
+    io.stderr:write("Error: cannot connect to ",loc.host,"\n")
     return
   end
   
   local okay,err = ios:write(location,"\r\n")
   if not okay then
-    io.stderr:write("ios:write() = ",err,"\n")
+    io.stderr:write("Error: ios:write() = ",err,"\n")
     ios:close()
     return
   end
   
   local statline = ios:read("*l")
   if not statline then
-    io.stderr:write("bad request\n")
+    io.stderr:write("Error: bad request\n")
     ios:close()
     return
   end
   
-  io.stderr:write("<<< ",statline,"\n")
+  io.stderr:write("Status-Line: ",statline,"\n")
   local system,status,std,info = statparse:match(statline)
   if not system then
-    io.stderr:write("bad reply: ",statline,"\n")
+    io.stderr:write("Error: bad reply: ",statline,"\n")
     ios:close()
     return
   end
   
-  io.stderr:write(string.format("system=%s status=%s info=%s%s\n",
-        system,
-        status,
-        info,
-        std and "" or "OUTDATED"
-  ))
+  io.stderr:write(
+        string.format("System: %s\n",system),
+        string.format("Status: %s\n",status),
+        string.format("Info: %s%s\n",info,std and "" or "OUTDATED")
+  )
   
   if system == 'auth' then
     if status == 'required' and CERT and KEY then
@@ -131,20 +133,27 @@ local function main(location,usecert,rcount)
     
   elseif system == 'redirect' then
     if rcount == 5 then
-      io.stderr:write(string.format("too man redirects\n"))
+      io.stderr:write(string.format("Error: too man redirects\n"))
     else
       local where  = url:match(info)
       local new    = uurl.merge(loc,where)
       local newloc = uurl.toa(new)
       
-      io.stderr:write("--- ",newloc,"\n")
+      io.stderr:write("Redirect: %s\n",newloc)
       ios:close()
       return main(newloc,usecert,rcount + 1)
     end
     
   elseif system == 'okay' then
-    io.stderr:write(string.format("cipher=%q version=%s strength=%d\n",ios.__ctx:conn_cipher(),ios.__ctx:conn_version(),ios.__ctx:conn_cipher_strength()))
-    io.stderr:write(string.format("servername=%q alpn=%q\n",ios.__ctx:conn_servername(),ios.__ctx:conn_alpn_selected()))
+    io.stderr:write(
+        string.format("Cipher: %s\n",ios.__ctx:conn_cipher()),
+        string.format("Version: %s\n",ios.__ctx:conn_version()),
+        string.format("Cipher-Strength: %d\n",ios.__ctx:conn_cipher_strength()),
+        string.format("Server: %s\n",ios.__ctx:conn_servername()),
+        string.format("ALPN: %s\n",ios.__ctx:conn_alpn_selected()),
+        "\n"
+    )
+    
     repeat
       local data = ios:read("*b")
       if data then io.stdout:write(data) end
