@@ -139,7 +139,7 @@ local function main(location,usecert,rcount)
       local new    = uurl.merge(loc,where)
       local newloc = uurl.toa(new)
       
-      io.stderr:write("Redirect: %s\n",newloc)
+      io.stderr:write(string.format("Redirect: %s\n",newloc))
       ios:close()
       return main(newloc,usecert,rcount + 1)
     end
