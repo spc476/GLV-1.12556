@@ -270,6 +270,7 @@ function handle_output(ios,inp,program)
     return 40
   end
   
+  headers = parse_headers:match(headers)
   local status = headers['Status'] or 20
   
   if headers['Location'] then
