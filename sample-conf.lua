@@ -494,7 +494,7 @@ hosts =
       -- ------------------------------------
       
       {
-        path      = '^/%~([^/]+)(/.*)',
+        path      = '^(/%~)([^/]+)(/.*)',
         module    = "GLV-1.handlers.userdir",
         directory = "public_gemini", -- optional, default value
         index     = "index.gemini",  -- optional, default value

@@ -42,8 +42,8 @@ end
 
 -- ************************************************************************
 
-function handler(conf,auth,loc,match)
-  local userdir = getuserdir(match[1])
+function handler(conf,auth,loc,match,ios)
+  local userdir = getuserdir(match[2])
   if not userdir then
     return 51,MSG[51],""
   end
@@ -65,7 +65,8 @@ function handler(conf,auth,loc,match)
     mime      = conf.mime,
   }
   
-  return filesystem.handler(fsconf,auth,loc,{ match[2] })
+  match = { match[1] .. match[2] , match[3] }
+  return filesystem.handler(fsconf,auth,loc,{ match[2] },ios)
 end
 
 -- ************************************************************************
