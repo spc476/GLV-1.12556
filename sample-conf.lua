@@ -477,6 +477,16 @@ hosts =
         module = "GLV-1.handlers.sample",
       },
       
+      -- --------------------------------------
+      -- A handler to serve up content when a file is just too much overhead
+      -- ------------------------------------
+      
+      {
+        path    = "^/favicon%.txt$",
+        module  = "GLV-1.handlers.content",
+        content = "�",
+      },
+      
       -- ------------------------------------
       -- A handler to serve up a single file
       -- ------------------------------------
