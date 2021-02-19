@@ -32,7 +32,7 @@ function init(conf)
   end
   
   if not conf.mime then
-    conf.mime = "text/plain"
+    conf.mime = "text/plain; charset=utf-8"
   end
   
   return true

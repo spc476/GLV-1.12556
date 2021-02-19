@@ -484,7 +484,8 @@ hosts =
       {
         path    = "^/favicon%.txt$",
         module  = "GLV-1.handlers.content",
-        content = "👽",
+        mime    = "text/plain; charset=utf-8", -- optional, default value
+        content = "👽",                        -- mandatory
       },
       
       -- ------------------------------------
