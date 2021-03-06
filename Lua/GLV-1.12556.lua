@@ -345,6 +345,11 @@ local function main(ios)
       return 59
     end
     
+    if loc.fragment then
+      ios:write("59 ",MSG[59],"\r\n")
+      return 59
+    end
+    
     -- ---------------------------------------------------------------
     -- Relative path resolution is the domain of the client, not the
     -- server.  So reject any requests with relative path elements.
