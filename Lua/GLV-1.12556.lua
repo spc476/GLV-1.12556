@@ -300,7 +300,7 @@ local function main(ios)
     
     request = ios:read("*l")
     if not request then
-      ios:write("50 ",MSG[59],"\r\n")
+      ios:write("59 ",MSG[59],"\r\n")
       return 59
     end
     
@@ -358,7 +358,7 @@ local function main(ios)
     -- ---------------------------------------------------------------
     
     if loc.path:match "/%.%./" or loc.path:match "/%./" or loc.path:match "//+" then
-      ios:write("50 ",MSG[59],"\r\n")
+      ios:write("59 ",MSG[59],"\r\n")
       return 59
     end
     
