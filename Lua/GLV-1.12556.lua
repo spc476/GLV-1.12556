@@ -372,7 +372,7 @@ local function main(ios)
     for _,rule in ipairs(CONF.hosts[loc.host].authorization) do
       if loc.path:match(rule.path) then
         if not ios.__ctx:peer_cert_provided() then
-          ios:write("60 ",MSG[60],"\r\n")
+          ios:write("60 ",rule.message or "","\r\n")
           return 60
         end
         

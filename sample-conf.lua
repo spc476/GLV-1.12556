@@ -404,6 +404,15 @@ hosts =
         
         path   = "^/private",
         
+        -- -----------------------------------------------------------------
+        -- Additional information about the type of certificate, or how to
+        -- request a certificate, to access this material.  This is returned
+        -- when Gemini returns a '60' status code.  This is an optional
+        -- field with no default.
+        -- -----------------------------------------------------------------
+        
+        message = "Please contact the admin for a certificate for access",
+        
         -- ------------------------------------------------------------------
         -- Function to check the certificate.  It's given the issuer
         -- information, the subject information and the broken down request.
