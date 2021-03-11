@@ -27,7 +27,6 @@ local errno  = require "org.conman.errno"
 local fsys   = require "org.conman.fsys"
 local magic  = require "org.conman.fsys.magic"
 local uurl   = require "GLV-1.url-util"
-local MSG    = require "GLV-1.MSG"
 local cgi    = require "GLV-1.cgi"
 local scgi   = require "GLV-1.scgi"
 local io     = require "io"
@@ -115,7 +114,7 @@ function handler(conf,auth,loc,match,ios)
       local f,err = io.open(file,"rb")
       if not f then
         syslog('error',"%s: %s",file,err)
-        ios:write("40 ",MSG[40],"\r\n")
+        ios:write("40\r\n")
         return 40
       end
       
@@ -135,7 +134,7 @@ function handler(conf,auth,loc,match,ios)
     end
     
     if not fsys.access(file,"r") then
-      ios:write("51 ",MSG[51],"\r\n")
+      ios:write("51\r\n")
       return 51
     end
     
@@ -147,7 +146,7 @@ function handler(conf,auth,loc,match,ios)
     local _,e      = loc.path:find(fsys.basename(file),1,true)
     local pathinfo = e and loc.path:sub(e+1,-1) or loc.path
     if e and pathinfo ~= "" then
-      ios:write("51 ",MSG[51],"\r\n")
+      ios:write("51\r\n")
       return 51
     end
     return contents(conf.mime[fsys.extension(file)] or magic(file))
@@ -170,7 +169,7 @@ function handler(conf,auth,loc,match,ios)
     
     for _,pattern in ipairs(conf.no_access) do
       if segment:match(pattern) then
-        ios:write("51 ",MSG[51],"\r\n")
+        ios:write("51\r\n")
         return 51
       end
     end
@@ -180,7 +179,7 @@ function handler(conf,auth,loc,match,ios)
     
     if not info then
       syslog('error',"fsys.stat(%q) = %s",name,errno[err])
-      ios:write("51 ",MSG[51],"\r\n")
+      ios:write("51\r\n")
       return 51
     end
     
@@ -190,7 +189,7 @@ function handler(conf,auth,loc,match,ios)
       -- -------------------------------------------
       if not fsys.access(name,"x") then
         syslog('error',"access(%q) failed",dir)
-        ios:write("51 ",MSG[51],"\r\n")
+        ios:write("51\r\n")
         return 51
       end
     elseif info.mode.type == 'file' then
@@ -202,7 +201,7 @@ function handler(conf,auth,loc,match,ios)
       local base = loc.path:sub(1,e)
       return scgi(auth,name,conf,base,loc,ios)
     else
-      ios:write("51 ",MSG[51],"\r\n")
+      ios:write("51\r\n")
       return 51
     end
   end

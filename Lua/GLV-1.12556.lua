@@ -33,7 +33,6 @@ local ip        = require "org.conman.parsers.ip-text"
 local seed      = require "org.conman.math".seed
 local lpeg      = require "lpeg"
 local url       = require "org.conman.parsers.url" * lpeg.P(-1)
-local MSG       = require "GLV-1.MSG"
 
 local CONF = {}
 
@@ -187,8 +186,9 @@ do
       syslog('warning',"%s: host %q has no handlers",arg[1],host)
       conf.handlers = {}
     else
-      local function notfound()
-        return 51,MSG[51],""
+      local function notfound(_,_,_,_,ios)
+        ios:write("51\r\n")
+        return 51
       end
       
       local function loadmod(info)
@@ -300,7 +300,7 @@ local function main(ios)
     
     request = ios:read("*l")
     if not request then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
@@ -309,30 +309,30 @@ local function main(ios)
     -- -------------------------------------------------
     
     if #request > 1024 then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
     local loc = url:match(request)
     if not loc then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
     if not loc.scheme then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
     if not loc.host then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
     if loc.scheme ~= 'gemini'
     or not CONF.hosts[loc.host]
     or loc.port   ~= CONF.hosts[loc.host].port then
-      ios:write("53 ",MSG[53],"\r\n")
+      ios:write("53\r\n")
       return 53
     end
     
@@ -341,12 +341,12 @@ local function main(ios)
     -- ---------------------------------------------------------------
     
     if loc.user then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
     if loc.fragment then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
@@ -358,7 +358,7 @@ local function main(ios)
     -- ---------------------------------------------------------------
     
     if loc.path:match "/%.%./" or loc.path:match "/%./" or loc.path:match "//+" then
-      ios:write("59 ",MSG[59],"\r\n")
+      ios:write("59\r\n")
       return 59
     end
     
@@ -387,24 +387,24 @@ local function main(ios)
         auth.now       = os.time()
         
         if auth.now < auth.notbefore then
-          ios:write("62 ",MSG[62],"\r\n")
+          ios:write("62\r\n")
           return 62
         end
         
         if auth.now > auth.notafter then
-          ios:write("62 ",MSG[62],"\r\n")
+          ios:write("62\r\n")
           return 62
         end
         
         local okay,allowed = pcall(rule.check,auth.issuer,auth.subject,loc)
         if not okay then
           syslog('error',"%s: %s",rule.path,allowed)
-          ios:write("40 ",MSG[40],"\r\n")
+          ios:write("40\r\n")
           return 40
         end
         
         if not allowed then
-          ios:write("61 ",MSG[61],"\r\n")
+          ios:write("61\r\n")
           return 61
         end
         
@@ -438,7 +438,7 @@ local function main(ios)
     
     for _,pattern in ipairs(CONF.hosts[loc.host].redirect.gone) do
       if loc.path:match(pattern) then
-        ios:write("52 ",MSG[52],"\r\n")
+        ios:write("52\r\n")
         return 52
       end
     end
@@ -468,8 +468,8 @@ local function main(ios)
     
     if not found then
       syslog('error',"no handlers for %q found---possible configuration error?",request)
-      ios:write("41 ",MSG[41],"\r\n")
-      status = 41
+      ios:write("40\r\n")
+      status = 40
     end
     
     return status

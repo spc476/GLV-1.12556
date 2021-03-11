@@ -30,7 +30,6 @@ local fsys   = require "org.conman.fsys"
 local lpeg   = require "lpeg"
 local math   = require "math"
 local os     = require "os"
-local MSG    = require "GLV-1.MSG"
 local uurl   = require "GLV-1.url-util"
 
 local pairs    = pairs
@@ -266,7 +265,7 @@ function handle_output(ios,inp,program)
   
   if not headers then
     syslog('error',"%s: is this a *GatewayInterface program?",program)
-    ios:write("40 ",MSG[40],"\r\n")
+    ios:write("40\r\n")
     return 40
   end
   

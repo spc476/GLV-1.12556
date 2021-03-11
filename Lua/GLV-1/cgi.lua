@@ -34,7 +34,6 @@ local io        = require "io"
 local string    = require "string"
 local coroutine = require "coroutine"
 local uurl      = require "GLV-1.url-util"
-local MSG       = require "GLV-1.MSG"
 local gi        = require "GLV-1.gateway"
 
 local tonumber  = tonumber
@@ -115,21 +114,21 @@ return function(auth,program,directory,base,location,out)
   
   if not gconf and not hconf and not dconf then
     syslog('error',"CGI script called, but CGI not configured!")
-    out:write("40 ",MSG[40],"\r\n")
+    out:write("40\r\n")
     return 40
   end
   
   if dconf == false
   or hconf == false and dconf == nil then
     syslog('error',"CGI script called, but CGI not configured!")
-    out:write("40 ",MSG[40],"\r\n")
+    out:write("40\r\n")
     return 40
   end
   
   local pipe,err1 = fsys.pipe()
   if not pipe then
     syslog('error',"CGI pipe: %s",errno[err1])
-    out:write("40 ",MSG[40],"\r\n")
+    out:write("40\r\n")
     return 40
   end
   
@@ -139,7 +138,7 @@ return function(auth,program,directory,base,location,out)
   
   if not child then
     syslog('error',"process.fork() = %s",errno[err])
-    out:write("40 ",MSG[40],"\r\n")
+    out:write("40\r\n")
     return 40
   end
   

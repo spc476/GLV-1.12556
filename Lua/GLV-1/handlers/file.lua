@@ -27,7 +27,6 @@ local errno  = require "org.conman.errno"
 local fsys   = require "org.conman.fsys"
 local magic  = require "org.conman.fsys.magic"
 local lpeg   = require "lpeg"
-local MSG    = require "GLV-1.MSG"
 local io     = require "io"
 
 _ENV = {}
@@ -63,7 +62,7 @@ function handler(conf,_,_,_,ios)
     local f,err = io.open(conf.file,'rb')
     if not f then
       syslog('error',"%s: %s",conf.file,err)
-      ios:write("40 ",MSG[40],"\r\n")
+      ios:write("40\r\n")
       return 40
     end
     
@@ -80,14 +79,14 @@ function handler(conf,_,_,_,ios)
   
   if fsys.access(conf.file,'x') then
     syslog('error',"%s: can only serve non-executable files",conf.file)
-    ios:write("40 ",MSG[40],"\r\n")
+    ios:write("40\r\n")
     return 40
   end
   
   local okay,err = fsys.access(conf.file,'r')
   if not okay then
     syslog('error',"%s: %s",conf.file,errno[err])
-    ios:write("40 ",MSG[40],"\r\n")
+    ios:write("40\r\n")
     return 40
   end
   
