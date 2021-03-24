@@ -45,16 +45,16 @@ local R  = lpeg.R
 -- Note: The commented letters A, B, C, etc., reference RFC-3986 5.2.4.
 -- ********************************************************************
 
-local segment = P'../'         * Cc''         * Cc(false) -- A
-              + P'./'          * Cc''         * Cc(false)
-              + P'/.'  * #P'/' * Cc''         * Cc(false) -- B
-              + P'/.'  * P(-1) * Cc'/'        * Cc(false)
-              + P'/..' * #P'/' * Cc''         * Cc(true)  -- C
-              + P'/..' * P(-1) * Cc'/'        * Cc(true)
-              + P'..'  * P(-1) * Cc''         * Cc(false) -- D
-              + P'.'   * P(-1) * Cc''         * Cc(false)
-              + C(P'/'^-1 * (P(1) - P'/')^1)  * Cc(false) -- E
-              + C'/'                          * Cc(false)
+local segment = P'../'         * Cc''        * Cc(false) -- A
+              + P'./'          * Cc''        * Cc(false)
+              + P'/.'  * #P'/' * Cc''        * Cc(false) -- B
+              + P'/.'  * P(-1) * Cc'/'       * Cc(false)
+              + P'/..' * #P'/' * Cc''        * Cc(true)  -- C
+              + P'/..' * P(-1) * Cc'/'       * Cc(true)
+              + P'..'  * P(-1) * Cc''        * Cc(false) -- D
+              + P'.'   * P(-1) * Cc''        * Cc(false)
+              + C(P'/'^-1 * (P(1) - P'/')^1) * Cc(false) -- E
+              + C'/'                         * Cc(false)
               
 rm_dot_segs = Cf(Cc"" * (Cg(segment))^1,function(acc,capture,trim)
   if trim then
@@ -97,19 +97,19 @@ function merge(Base,Ru)
   
   if Ru.scheme then
     T.scheme = Ru.scheme
-      T.host = Ru.host -- authority
-      T.port = Ru.port
-      T.user = Ru.user
+    T.host   = Ru.host -- authority
+    T.port   = Ru.port
+    T.user   = Ru.user
     T.path   = Ru.path
     T.path   = rm_dot_segs:match(T.path)
     T.query  = Ru.query
   else
     if Ru.host then
-        T.host = Ru.host
-        T.port = Ru.port
-        T.user = Ru.user
-      T.path   = rm_dot_segs:match(Ru.path)
-      T.query  = Ru.query
+      T.host  = Ru.host
+      T.port  = Ru.port
+      T.user  = Ru.user
+      T.path  = rm_dot_segs:match(Ru.path)
+      T.query = Ru.query
     else
       if Ru.path == "" then
         T.path = Base.path
