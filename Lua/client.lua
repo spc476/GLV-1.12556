@@ -22,8 +22,7 @@
 -- ************************************************************************
 -- luacheck: ignore 611
 
-local nfl    = require "org.conman.nfl"
-local tls    = require "org.conman.nfl.tls"
+local tls    = require "org.conman.net.tls"
 local url    = require "org.conman.parsers.iri"
 local idn    = require "org.conman.idn"
 local uurl   = require "GLV-1.url-util"
@@ -75,7 +74,7 @@ local function main(location,usecert,rcount)
         string.format("Encoded: %s\n",idn.encode(loc.host))
   )
   
-  local ios = tls.connect(idn.encode(loc.host),loc.port,nil,function(conf)
+  local ios = tls.connect(idn.encode(loc.host),loc.port,function(conf)
     if usecert then
       if not conf:cert_file(CERT)
       or not conf:key_file(KEY) then
@@ -193,5 +192,4 @@ if #arg == 0 then
 end
 
 URL = arg[getopt(arg,opts)]
-nfl.spawn(main,URL)
-nfl.client_eventloop()
+main(URL)
