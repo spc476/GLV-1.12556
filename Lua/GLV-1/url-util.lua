@@ -247,17 +247,25 @@ function toa(u)
   local result = ""
   if u.scheme  then result = result .. u.scheme .. ':'   end
   if authority then result = result .. "//" .. authority end
-                    result = result .. esc_path:match(u.path)
-                    
-  if u.query then
-    if type(u.query) == 'table' then
-      result = result .. "?" .. toq(u.query)
-    else
-      result = result .. "?" .. u.query
+
+  if u.scheme == 'gopher' then
+    result = result .. esc_path:match(u.selector)
+    if u.search then
+      result = result .. "%09" .. toq(u.search)
     end
+  else
+    result = result .. esc_path:match(u.path)
+                    
+    if u.query then
+      if type(u.query) == 'table' then
+        result = result .. "?" .. toq(u.query)
+      else
+        result = result .. "?" .. u.query
+      end
+    end
+    
+    if u.fragment  then result = result .. "#" .. esc_frag:match(u.fragment) end
   end
-  
-  if u.fragment  then result = result .. "#" .. esc_frag:match(u.fragment) end
   return result
 end
 
