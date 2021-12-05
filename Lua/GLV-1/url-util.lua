@@ -250,7 +250,7 @@ function toa(u)
   if authority then result = result .. "//" .. authority end
 
   if u.scheme == 'gopher' then
-    result = result .. gtypes[u.type] .. esc_path:match(u.selector)
+    result = result .. "/" .. gtypes[u.type] .. u.selector
     if u.search then
       result = result .. "%09" .. toq(u.search)
     end
