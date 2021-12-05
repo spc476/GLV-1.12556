@@ -22,6 +22,7 @@
 -- luacheck: globals esc_auth esc_path esc_query esc_frag
 -- luacheck: ignore 611
 
+local gtypes   = require "org.conman.const.gopher-types"
 local lpeg     = require "lpeg"
 local string   = require "string"
 local table    = require "table"
@@ -249,7 +250,7 @@ function toa(u)
   if authority then result = result .. "//" .. authority end
 
   if u.scheme == 'gopher' then
-    result = result .. esc_path:match(u.selector)
+    result = result .. gtypes[u.type] .. esc_path:match(u.selector)
     if u.search then
       result = result .. "%09" .. toq(u.search)
     end
