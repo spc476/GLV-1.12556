@@ -304,6 +304,16 @@ local function main(ios)
       return 59
     end
     
+    -- -----------------------------------------------------------------
+    -- I know 58 isn't a defined Gemini status, but I'm tired of buggy
+    -- clients, so maybe THIS will get their damn attention
+    -- -----------------------------------------------------------------
+    
+    if #request == 0 then
+      ios:write("58 Not a gopher server!\r\n")
+      return 58
+    end
+    
     -- -------------------------------------------------
     -- Current Gemini spec lists URLS max limit as 1024.
     -- -------------------------------------------------
