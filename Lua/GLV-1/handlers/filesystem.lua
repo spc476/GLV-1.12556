@@ -114,8 +114,8 @@ function handler(conf,auth,loc,match,ios)
       local f,err = io.open(file,"rb")
       if not f then
         syslog('error',"%s: %s",file,err)
-        ios:write("40\r\n")
-        return 40
+        ios:write("51\r\n")
+        return 51
       end
       
       ios:write("20 ",mime,"\r\n")

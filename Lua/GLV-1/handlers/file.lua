@@ -62,8 +62,8 @@ function handler(conf,_,_,_,ios)
     local f,err = io.open(conf.file,'rb')
     if not f then
       syslog('error',"%s: %s",conf.file,err)
-      ios:write("40\r\n")
-      return 40
+      ios:write("51\r\n")
+      return 51
     end
     
     ios:write("20 ",mime,"\r\n")
@@ -86,8 +86,8 @@ function handler(conf,_,_,_,ios)
   local okay,err = fsys.access(conf.file,'r')
   if not okay then
     syslog('error',"%s: %s",conf.file,errno[err])
-    ios:write("40\r\n")
-    return 40
+    ios:write("51\r\n")
+    return 51
   end
   
   if conf.file:match(conf.extension) then
