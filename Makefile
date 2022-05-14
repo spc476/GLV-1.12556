@@ -54,7 +54,7 @@ endif
 
 .PHONY: all luacheck clean install uninstall
 
-all:	Lua/GLV-1/getuserdir.so
+all:	GLV-1/getuserdir.so
 
 luacheck:
 	luacheck $(shell find . -name '*.lua')
@@ -63,15 +63,15 @@ clean:
 	$(RM) $(shell find . -name '*~')
 	$(RM) $(shell find . -name '*.so')
 
-install: Lua/GLV-1/getuserdir.so
+install: GLV-1/getuserdir.so
 	$(INSTALL) -d $(DESTDIR)$(LIBDIR)/GLV-1
 	$(INSTALL) -d $(DESTDIR)$(LUADIR)/GLV-1
 	$(INSTALL) -d $(DESTDIR)$(LUADIR)/GLV-1/handlers
 	$(INSTALL) -d $(DESTDIR)$(BINDIR)
-	$(INSTALL_DATA)    Lua/GLV-1/*.lua          $(DESTDIR)$(LUADIR)/GLV-1
-	$(INSTALL_DATA)    Lua/GLV-1/handlers/*.lua $(DESTDIR)$(LUADIR)/GLV-1/handlers
-	$(INSTALL_PROGRAM) Lua/GLV-1/*.so           $(DESTDIR)$(LIBDIR)/GLV-1
-	$(INSTALL_PROGRAM) Lua/GLV-1.12556.lua      $(DESTDIR)$(BINDIR)/GLV-1.12556
+	$(INSTALL_DATA)    GLV-1/*.lua          $(DESTDIR)$(LUADIR)/GLV-1
+	$(INSTALL_DATA)    GLV-1/handlers/*.lua $(DESTDIR)$(LUADIR)/GLV-1/handlers
+	$(INSTALL_PROGRAM) GLV-1/*.so           $(DESTDIR)$(LIBDIR)/GLV-1
+	$(INSTALL_PROGRAM) GLV-1.12556.lua      $(DESTDIR)$(BINDIR)/GLV-1.12556
 
 uninstall:
 	$(RM) -r $(DESTDIR)$(LUADIR)/GLV-1
