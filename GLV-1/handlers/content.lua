@@ -32,7 +32,7 @@ function init(conf)
   end
   
   if not conf.mime then
-    conf.mime = "text/plain; charset=utf-8"
+    conf.mime = ("text/plain; charset=%s; lang=%s"):format(conf.charset,conf.language)
   end
   
   return true

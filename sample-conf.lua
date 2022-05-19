@@ -314,7 +314,7 @@ extension = ".gemini"
 
 -- ************************************************************************
 -- MIME text/* parameters langauge and charset
--- optional, global, host, cgi, scgi, handler, no default value
+-- optional, global, host, cgi, scgi, handler
 --
 -- The values given here are the assumed defaults if not given and are
 -- listed here for documentation purposes only.
@@ -322,8 +322,8 @@ extension = ".gemini"
 -- XXX - cascade into cgi and scgi blocks.
 -- ************************************************************************
 
-charset  = "utf-8"
-language = "en"
+charset  = "utf-8" -- default value
+language = "en"    -- default value
 
 -- ************************************************************************
 -- Virtual hosts, mandatory, at least one host defined.
@@ -470,8 +470,8 @@ hosts =
     -- checked.  The configuration options are entirely dependant upon the
     -- handler---the only required configuration options per handler are the
     -- 'path' field and the 'module' field, which defines the codebase for
-    -- the handler.  The path fields are checked in the order as they appear
-    -- in this list, and the first match wins.
+    -- the handler.  The handlers can be defined in any order.  At runtime,
+    -- the longest match wins.
     -- ********************************************************************
     
     handlers =
@@ -482,7 +482,7 @@ hosts =
       -- ----------------------
       
       {
-        path   = '^/sample/(.*)',
+        path   = '/sample',
         module = "GLV-1.handlers.sample",
       },
       
@@ -491,10 +491,10 @@ hosts =
       -- ------------------------------------
       
       {
-        path    = "^/favicon%.txt$",
+        path    = "/favicon.txt",
         module  = "GLV-1.handlers.content",
         mime    = "text/plain; charset=utf-8", -- optional, default value
-        content = "👽",                        -- mandatory
+        content = "👽",                         -- mandatory
       },
       
       -- ------------------------------------
@@ -502,7 +502,7 @@ hosts =
       -- ------------------------------------
       
       {
-        path      = '^/motd$',
+        path      = '/motd',
         module    = "GLV-1.handlers.file",
         file      = "/etc/motd", -- mandatory
         extension = ".gemini",   -- optional, default value
@@ -514,7 +514,7 @@ hosts =
       -- ------------------------------------
       
       {
-        path      = '^(/%~)([^/]+)(/.*)',
+        path      = '/users'
         module    = "GLV-1.handlers.userdir",
         directory = "public_gemini", -- optional, default value
         index     = "index.gemini",  -- optional, default value
@@ -530,7 +530,7 @@ hosts =
       -- --------------------------------------
       
       {
-        path      = ".*",
+        path      = "/",
         module    = "GLV-1.handlers.filesystem",
         directory = "/var/example.com/share",
         index     = "index.gemini", -- optional, default value
@@ -626,7 +626,7 @@ hosts =
     handlers =
     {
       {
-        path      = ".*",
+        path      = "/",
         module    = "GLV-1.handlers.filesystem",
         directory = "/var/exmple.org/share",
         language = "en-US",

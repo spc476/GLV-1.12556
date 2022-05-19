@@ -73,6 +73,14 @@ function init(iconf,hconf,gconf)
     end
   end
   
+  if not iconf.path then
+    return false,"missing path"
+  end
+  
+  if iconf.path:match "/$" then
+    iconf.path = iconf.path:sub(1,-2)
+  end
+  
   do
     local ext = iconf.extension:sub(2,-1)
     if iconf.mime[ext] then
@@ -103,7 +111,7 @@ end
 
 -- ************************************************************************
 
-function handler(conf,auth,loc,match,ios)
+function handler(conf,auth,loc,pathinfo,ios)
   local function read_file(file,base)
     local function contents(mime)
       if mime == "" then
@@ -138,31 +146,28 @@ function handler(conf,auth,loc,match,ios)
       return 51
     end
     
-    -- ---------------------------------------------------------------------
-    -- Check to see if we're at the end of the request.  If we're not, then
-    -- the client is buggy or tolling us, so return an error.
-    -- ---------------------------------------------------------------------
-    
-    local _,e      = loc.path:find(fsys.basename(file),1,true)
-    local pathinfo = e and loc.path:sub(e+1,-1) or loc.path
-    if e and pathinfo ~= "" then
-      ios:write("51\r\n")
-      return 51
-    end
     return contents(conf.mime[fsys.extension(file)] or magic(file))
   end
   
-  -- ----------------------------------------------------------------------
-  -- To keep thing simple, we still support the older method of specifying
-  -- the path with a single match.  This may change in the future, but for
-  -- now, let's do this.
-  -- ----------------------------------------------------------------------
-  
-  if #match == 1 then
-    match[1],match[2] = match[1]:match("^(/)(.*)")
+  if pathinfo == "" then
+    loc.path = loc.path .. "/"
+    ios:write("31 ",uurl.toa(loc),"\r\n")
+    return 31
   end
   
-  for dir,segment in descend_path(match[2]) do
+  -- -----------------------------------------------------------------------
+  -- pathinfo should start with a leading '/'.  If it doesn't then someone
+  -- is playing games here.
+  -- -----------------------------------------------------------------------
+  
+  if not pathinfo:match "^/" then
+    ios:write("51\r\n")
+    return 51
+  end
+  
+  pathinfo = pathinfo:sub(2,-1)
+  
+  for dir,segment in descend_path(pathinfo) do
     -- ----------------------------------------------------
     -- Skip the following files that match these patterns
     -- ----------------------------------------------------
@@ -223,7 +228,7 @@ function handler(conf,auth,loc,match,ios)
   -- Check for an index file
   -- ------------------------
   
-  local final = conf.directory .. "/" .. match[2]
+  local final = conf.directory .. "/" .. pathinfo
   if fsys.access(final .. "/" .. conf.index,"r") then
     return read_file(final .. "/" .. conf.index)
   end
@@ -234,7 +239,7 @@ function handler(conf,auth,loc,match,ios)
   
   local res =
   {
-    string.format("Index of %s",match[2]),
+    string.format("Index of %s",pathinfo),
     "---------------------------",
     ""
   }

@@ -48,19 +48,23 @@ function init(iconf)
 end
 
 -- ************************************************************************
--- Usage:       status = sample.handler(conf,auth,loc,match)
+-- Usage:       status = sample.handler(conf,auth,loc,pathinfo,ios)
 -- Desc:        Handle the request
 -- Input:       conf (table) configuration block from configuration file
 --              auth (table) authentication information
 --              loc (table) Broken down URL from the request
---              match (table) matched data from the path pattern
+--              pathinfo (string) rest of path string
 --              ios (object/iostream) Input/Output stream
 -- Return:      status (integer) Gemini status code
 -- ************************************************************************
 
-function handler(conf,auth,loc,match,ios)
+function handler(conf,auth,loc,pathinfo,ios)
   ios:write(
-        "20 text/plain\r\n",
+        string.format(
+                "20 text/plain; charset=%s; lang=%s\r\n",
+                conf.charset,
+                conf.language
+        ),
         string.format([[
 conf.path=%q
 conf.module=%q
@@ -70,7 +74,7 @@ loc.host=%s
 loc.port=%d
 loc.path=%q
 loc.query=%q
-match[1]=%q
+pathinfo=%q
 ]],
         conf.path,
         conf.module,
@@ -80,7 +84,7 @@ match[1]=%q
         loc.port,
         loc.path,
         loc.query or "",
-        match[1]  or ""
+        pathinfo  or ""
   ))
   return 20
 end

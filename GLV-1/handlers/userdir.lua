@@ -41,15 +41,14 @@ end
 
 -- ************************************************************************
 
-function handler(conf,auth,loc,match,ios)
-  local userdir = getuserdir(match[2])
-  if not userdir then
+function handler(conf,auth,loc,pathinfo,ios)
+  local user,path = pathinfo:match("^/([^/]+)(/?.*)")
+  if not user then
     ios:write("51\r\n")
     return 51
   end
   
-  userdir = userdir .. "/" .. conf.directory
-  
+  local userdir = getuserdir(user) .. "/" .. conf.directory
   if not fsys.access(userdir,"rx") then
     ios:write("51\r\n")
     return 51
@@ -66,8 +65,7 @@ function handler(conf,auth,loc,match,ios)
     mime      = conf.mime,
   }
   
-  match = { match[1] .. match[2] , match[3] }
-  return filesystem.handler(fsconf,auth,loc,{ match[2] },ios)
+  return filesystem.handler(fsconf,auth,loc,path,ios)
 end
 
 -- ************************************************************************

@@ -37,7 +37,7 @@ hosts =
     handlers    =
     {
       {
-        path      = ".*",
+        path      = "/",
         module    = "GLV-1.handlers.filesystem",
         directory = "share" -- change as needed
       }

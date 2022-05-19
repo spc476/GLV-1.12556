@@ -99,6 +99,9 @@ do
     os.exit(exit.CONFIG,true)
   end
   
+  CONF.language = CONF.language or "en"
+  CONF.charset  = CONF.charset  or "utf-8"
+  
   -- ----------------------------------------------------------------------
   -- This expression will canonicalize the address field.  If the host is
   -- missing, it will be replaced with the "all" address.  If the port is
@@ -227,7 +230,7 @@ do
         end
         
         info.language = info.language or conf.language
-        info.charset  = info.charset  or conf.charset
+        info.charset  = info.charset  or conf.charset or "utf-8"
         
         if mod.init then
           okay,err = mod.init(info,conf,CONF)
@@ -239,7 +242,15 @@ do
         end
       end
       
-      for _,info in ipairs(conf.handlers) do
+      table.sort(conf.handlers,function(a,b)
+        return #a.path == #b.path and a.path < b.path
+            or #a.path >  #b.path
+      end)
+      
+      for i,info in ipairs(conf.handlers) do
+        if i < #conf.handlers and info.path == conf.handlers[i+1] then
+          syslog('warning',"duplicate path %q found",info.path)
+        end
         loadmod(info)
       end
     end
@@ -462,10 +473,15 @@ local function main(ios)
     local status
     
     for _,info in ipairs(CONF.hosts[loc.host].handlers) do
-      local match = table.pack(loc.path:match(info.path))
-      if #match > 0 then
-        found       = true
-        okay,status = pcall(info.code.handler,info,auth,loc,match,ios)
+      if loc.path:sub(1,#info.path) == info.path then
+        found = true
+        okay,status = pcall(
+                info.code.handler,
+                info,auth,
+                loc,loc.
+                path:sub(#info.path + 1,-1),
+                ios
+        )
         
         if not okay then
           syslog('error',"request=%q error=%q",request,status)
