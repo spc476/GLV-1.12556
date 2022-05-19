@@ -464,6 +464,30 @@ hosts =
     },
     
     -- ********************************************************************
+    -- Rewrite block
+    --
+    -- This will allow you to rewrite URIs internally to the program.  The
+    -- pattern and replacement work the same as the redirection block, but
+    -- the result is used immedately.  The first match will stop the process.
+    --
+    -- The example below will rewrite URLs of the form:
+    --
+    --		http://example.com/~fred/somepath.gemini
+    --
+    -- to the following:
+    --
+    --		http://exampoe.com/users/fred/somepath.gemini
+    --
+    -- This is useful in case a redirection isn't wanted, or some tricky
+    -- URI usage is required for a custom module.
+    -- ********************************************************************
+    
+    rewrite =
+    {
+      { "^/~([^/]+)(/?.*)" , "/users/$1$2" },
+    },
+    
+    -- ********************************************************************
     -- Handlers, mandatory, at least one handler defined
     --
     -- These handle all requests, and are used after all redirections are
@@ -509,9 +533,11 @@ hosts =
         mime      = "text/plain" -- optional, if GNU magic can't determine type
       },
       
-      -- ------------------------------------
+      -- ----------------------------------------------------------------
       -- Handles public user directories
-      -- ------------------------------------
+      -- NOTE:  The prefix is used when a redirection is required.  The
+      --	text supplied is used instead of the path.
+      -- ----------------------------------------------------------------
       
       {
         path      = '/users',
@@ -519,6 +545,7 @@ hosts =
         directory = "public_gemini", -- optional, default value
         index     = "index.gemini",  -- optional, default value
         extension = ".gemini",       -- optional, default value
+        prefix    = "/~",            -- optional, defaults to path
         no_access = -- optional, see below
         {
           "^%.",  -- no to any dot files

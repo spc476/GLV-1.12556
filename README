@@ -23,6 +23,7 @@ Features:
 * Support for specifying MIME type per file extension
 * Support for files in multiple human languages
 * Support for specifying non-UTF-8 character sets
+* Support for rewriting URLs internally
 * Authentication by client certificates
 * Easily extensible with support for custom handlers
 
