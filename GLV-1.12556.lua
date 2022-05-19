@@ -169,7 +169,7 @@ do
     end
     
     -- --------------------------------------------
-    -- Make sure the redirect tables always exist.
+    -- Make sure the redirect tables amd rewrite table always exist.
     -- --------------------------------------------
     
     if not conf.redirect then
@@ -178,6 +178,10 @@ do
       conf.redirect.temporary = conf.redirect.temporary or {}
       conf.redirect.permanent = conf.redirect.permanent or {}
       conf.redirect.gone      = conf.redirect.gone      or {}
+    end
+    
+    if not conf.rewrite then
+      conf.rewrite = {}
     end
     
     -- --------------------------------------------------------------------
@@ -461,6 +465,19 @@ local function main(ios)
       if loc.path:match(pattern) then
         ios:write("52\r\n")
         return 52
+      end
+    end
+    
+    -- ------------------------------
+    -- Handle the rewrite rules.
+    -- ------------------------------
+    
+    for _,rule in ipairs(CONF.hosts[loc.host].rewrite) do
+      local match = table.pack(loc.path:match(rule[1]))
+      if #match > 0 then
+        loc._pathorig = loc.path
+        loc.path      = redirect_subst:match(rule[2],1,match)
+        break
       end
     end
     

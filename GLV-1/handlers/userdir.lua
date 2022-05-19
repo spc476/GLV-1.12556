@@ -56,7 +56,7 @@ function handler(conf,auth,loc,pathinfo,ios)
   
   local fsconf =
   {
-    path      = conf.path,
+    path      = conf.prefix or conf.path,
     module    = "GLV-1.handlers.filesystem",
     directory = userdir,
     index     = conf.index,
@@ -65,6 +65,7 @@ function handler(conf,auth,loc,pathinfo,ios)
     mime      = conf.mime,
   }
   
+  loc.path = loc._pathorig or loc.path
   return filesystem.handler(fsconf,auth,loc,path,ios)
 end
 
