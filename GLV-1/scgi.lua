@@ -21,36 +21,16 @@
 -- ************************************************************************
 -- luacheck: ignore 611
 
-local syslog    = require "org.conman.syslog"
-local fsys      = require "org.conman.fsys"
-local process   = require "org.conman.process"
-local signal    = require "org.conman.signal"
-local errno     = require "org.conman.errno"
-local url       = require "org.conman.parsers.url"
-local net       = require "org.conman.net"
-local nfl       = require "org.conman.nfl"
-local tcp       = require "org.conman.nfl.tcp"
-local gi        = require "GLV-1.gateway"
-local coroutine = require "coroutine"
+local syslog = require "org.conman.syslog"
+local fsys   = require "org.conman.fsys"
+local errno  = require "org.conman.errno"
+local url    = require "org.conman.parsers.url"
+local net    = require "org.conman.net"
+local tcp    = require "org.conman.nfl.tcp"
+local gi     = require "GLV-1.gateway"
 
-local pairs     = pairs
-local tostring  = tostring
-
-local PID = {}
-
--- ************************************************************************
-
-signal.catch('child',function()
-  local info,err = process.wait()
-  if not info then
-    syslog('error',"wait() = %q",errno[err])
-  else
-    local path = PID[info.pid]
-    PID[info.pid] = nil
-    PID[path]     = nil
-    syslog('warning',"%s: pid=%d status=%s description=%s",path,info.pid,info.status,info.description)
-  end
-end)
+local pairs    = pairs
+local tostring = tostring
 
 -- ************************************************************************
 
@@ -101,31 +81,6 @@ return function(auth,program,directory,base,location,ios)
   end
   
   local addr
-  local tsock,path = scgiloc.path:match("^([^,]*),?(.*)")
-  
-  if path ~= "" then
-    if not PID[path] then
-      local pid,err1 = process.fork()
-      if not pid then
-        syslog('error',"fork() = %s",errno[err1])
-        ios:write("40\r\n")
-        return 40
-      end
-      if pid == 0 then
-        signal.default('int')
-        signal.default('term')
-        signal.default('child')
-        process.exec(path,{})
-        process.exit(127)
-      else
-        syslog('info',"starting SCGI %s",path)
-        PID[path] = pid
-        PID[pid]  = path
-        nfl.timeout(.1)
-        coroutine.yield()
-      end
-    end
-  end
   
   if scgiloc.host then
     if not scgiloc.port then
@@ -136,13 +91,13 @@ return function(auth,program,directory,base,location,ios)
     
     addr = net.address2(scgiloc.host,'any','tcp',scgiloc.port)[1]
   else
-    if tsock == "" then
+    if scgiloc.path == "" then
       syslog('error',"SCGI: %q missing path",scgiurl)
       ios:write("40\r\n")
       return 40
     end
     
-    addr = net.address(tsock,'tcp')
+    addr = net.address(scgiloc.path,'tcp')
   end
   
   local inp = tcp.connecta(addr,5)

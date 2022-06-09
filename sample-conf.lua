@@ -190,22 +190,10 @@ cgi =
 -- SCGI definition block, optional, global, host, or filesystem handler,
 -- no default values
 --
--- SCGI "scripts" are symbolic links in the form of a scgi: URL.  The format
--- for this URL:
---
---	scgi://hostname:port/
---	scgi:/path/to/unixsocket
---		The SCGI program is expected to be running; GLV-1.12556 will
---		connect to the server.
---
---	scgi://hostname:port/,/path/to/script
---	scgi:/path/to/unixsocket,/path/to/script
---		GLV-1.12556 will run the the program upon first request,
---		and ensure that it remains running (it will restart it if
---		the program exits before GLV-1.12556 does).  GLV-1.12556
---		will then connect to the server on the network address.
---
--- This module implements the SCGI standard as defined in
+-- Any symbolic link found in the form of 'scgi://hostname:port' or in the
+-- form of 'scgi:/path/to/unixsocket' will be treated as a SCGI program,
+-- with the server connecting to the hostname on the given port.  This
+-- module implements the SCGI standard as defined in
 --
 -- https://web.archive.org/web/20020403050958/http://python.ca/nas/scgi/protocol.txt
 --
