@@ -34,8 +34,6 @@ local seed      = require "org.conman.math".seed
 local lpeg      = require "lpeg"
 local url       = require "org.conman.parsers.url" * lpeg.P(-1)
 
-local CONF = {}
-
 magic:flags("mime")
 math.randomseed(seed())
 
@@ -60,7 +58,7 @@ if #arg == 0 then
   os.exit(exit.USAGE,true)
 end
 
-do
+local CONF = {} do
   local conffile,err = loadfile(arg[1],"t",CONF)
   
   if not conffile then
