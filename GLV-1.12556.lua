@@ -26,16 +26,14 @@ local signal    = require "org.conman.signal"
 local exit      = require "org.conman.const.exit"
 local syslog    = require "org.conman.syslog"
 local fsys      = require "org.conman.fsys"
-local magic     = require "org.conman.fsys.magic"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
 local ip        = require "org.conman.parsers.ip-text"
-local seed      = require "org.conman.math".seed
 local lpeg      = require "lpeg"
 local url       = require "org.conman.parsers.url" * lpeg.P(-1)
 
-magic:flags("mime")
-math.randomseed(seed())
+math.randomseed(require("org.conman.math").seed())
+require("org.conman.fsys.magic"):flags('mime')
 
 -- ************************************************************************
 
