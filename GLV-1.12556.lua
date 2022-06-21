@@ -29,8 +29,8 @@ local fsys      = require "org.conman.fsys"
 local nfl       = require "org.conman.nfl"
 local tls       = require "org.conman.nfl.tls"
 local ip        = require "org.conman.parsers.ip-text"
-local lpeg      = require "lpeg"
 local url       = require "org.conman.parsers.url" * lpeg.P(-1)
+local lpeg      = require "lpeg"
 
 math.randomseed(require("org.conman.math").seed())
 require("org.conman.fsys.magic"):flags('mime')
