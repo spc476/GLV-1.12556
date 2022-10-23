@@ -60,7 +60,6 @@ local CONF = {} do
   local conffile,err = loadfile(arg[1],"t",CONF)
   
   if not conffile then
-    syslog('critical',"%s: %s",arg[1],err)
     io.stderr:write(string.format("%s: %s\n",arg[1],err))
     os.exit(exit.CONFIG,true)
   end
@@ -84,14 +83,14 @@ local CONF = {} do
     CONF._host,CONF._port = parse_address:match(CONF.address)
     if not CONF._host or not CONF._port then
       syslog('critical',"%s: syntax error with address",arg[1])
-      io.stderr:write(string.format("%s: syntax error with address\n",arg[1]))
+      io.stderr:write(string.format("%s: syntax error with address",arg[1]),"\n")
       os.exit(exit.CONFIG,true)
     end
   end
   
   if not CONF.hosts then
     syslog('critical',"%s: at least one host needs to be defined",arg[1])
-    io.stderr:write(string.format("%s: at least one host needs to be defined\n",arg[1]))
+    io.stderr:write(string.format("%s: at least one host needs to be defined",arg[1]),"\n")
     os.exit(exit.CONFIG,true)
   end
   
@@ -131,10 +130,12 @@ local CONF = {} do
   for host,conf in pairs(CONF.hosts) do
     if not conf.certificate then
       syslog('error',"%s: host %q missing certifiate---can't configure host",arg[1],host)
+      io.stderr:write(string.format("%s: host %q missing certifiate---can't configure host",arg[1],host),"\n")
     end
     
     if not conf.keyfile then
       syslog('error',"%s: host %q missing keyfile---can't configure host",arg[1],host)
+      io.stderr:write(string.format("%s: host %q missing keyfile---can't configure host",arg[1],host),"\n")
     end
     
     local addr = conf.address and canon_address:match(conf.address,1,host)
@@ -185,8 +186,9 @@ local CONF = {} do
     -- If we do have handlers, load them up and initialize them.
     -- --------------------------------------------------------------------
     
-    if not conf.handlers then
+    if not conf.handlers or #conf.handlers == 0 then
       syslog('warning',"%s: host %q has no handlers",arg[1],host)
+      io.stderr:write(string.format("%s: host %q has no handlers",arg[1],host),"\n")
       conf.handlers = {}
     else
       local function notfound(_,_,_,_,ios)
@@ -196,27 +198,31 @@ local CONF = {} do
       
       local function loadmod(info)
         if not info.path then
-          syslog('error',"missing path field in handler")
+          syslog('error',"%q: missing path field in handler",info.module or "")
+          io.stderr:write(string.format("%q: missing path field in handler",info.module or ""),"\n")
           info.path = ""
           info.code = { handler = notfound }
           return
         end
         
         if not info.module then
-          syslog('error',"%s: missing module field",info.path)
+          syslog('error',"%q: missing module field",info.path or "")
+          io.stderr:write(string.format("%q: missing module field",info.path or ""),"\n")
           info.code = { handler = notfound }
           return
         end
         
         local okay,mod = pcall(require,info.module)
         if not okay then
-          syslog('error',"%s: %s",info.module,mod)
+          syslog('error',"%q: %s",info.module,mod)
+          io.stderr:write(string.format("%q: %s",info.module,mod),"\n")
           info.code = { handler = notfound }
           return
         end
         
         if type(mod) ~= 'table' then
-          syslog('error',"%s: module not supported",info.module)
+          syslog('error',"%q: module not supported",info.module)
+          io.stderr:write(string.format("%q: module not supported",info.module),"\n")
           info.code = { handler = notfound }
           return
         end
@@ -224,7 +230,8 @@ local CONF = {} do
         info.code = mod
         
         if not mod.handler then
-          syslog('error',"%s: missing handler()",info.module)
+          syslog('error',"%q: missing handler()",info.module)
+          io.stderr:write(string.format("%q: missing handler()",info.module),"\n")
           mod.handler = notfound
           return
         end
@@ -235,7 +242,8 @@ local CONF = {} do
         if mod.init then
           okay,err = mod.init(info,conf,CONF)
           if not okay then
-            syslog('error',"%s: %s",info.module,err)
+            syslog('error',"%q: %s",info.module,err)
+            io.stderr:write(string.format("%q: %s",info.module,err),"\n")
             mod.handler = notfound
             return
           end
@@ -250,6 +258,7 @@ local CONF = {} do
       for i,info in ipairs(conf.handlers) do
         if i < #conf.handlers and info.path == conf.handlers[i+1] then
           syslog('warning',"duplicate path %q found",info.path)
+          io.stderr:write(string.format("duplicate path %q found",info.path),"\n")
         end
         loadmod(info)
       end
@@ -260,7 +269,7 @@ local CONF = {} do
   
   if not next(CONF._interfaces) then
     syslog('critical',"%s: at least one host needs to be configured",arg[1])
-    io.stderr:write(string.format("%s: at least one host needs to be configured\n",arg[1]))
+    io.stderr:write(string.format("%s: at least one host needs to be configured",arg[1]),"\n")
     os.exit(exit.CONFIG,true)
   end
   
