@@ -496,12 +496,13 @@ local function main(ios)
     
     for _,info in ipairs(CONF.hosts[loc.host].handlers) do
       if loc.path:sub(1,#info.path) == info.path then
-        found = true
+        found       = true
         okay,status = pcall(
                 info.code.handler,
-                info,auth,
-                loc,loc.
-                path:sub(#info.path + 1,-1),
+                info,
+                auth,
+                loc,
+                loc.path:sub(#info.path + 1,-1),
                 ios
         )
         
