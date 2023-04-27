@@ -212,11 +212,11 @@ function handler(conf,auth,loc,pathinfo,ios)
   end
   
   -- ----------------------------------------------------------------------
-  -- Because I'm that pedantic---if we get here, we at a directory.  If the
-  -- passed in request did NOT end in a '/', do a permanent redirect to a
-  -- request WITH a final '/'.  This is to ensure any mistakes with covering
-  -- a directory in the authorization block doesn't fail because the user
-  -- included a trailing '/' in the pattern ...
+  -- Because I'm that pedantic---if we get here, we're at a directory.  If
+  -- the passed in request did NOT end in a '/', do a permanent redirect to
+  -- a request WITH a final '/'.  This is to ensure any mistakes with
+  -- covering a directory in the authorization block doesn't fail because
+  -- the user included a trailing '/' in the pattern ...
   -- ----------------------------------------------------------------------
   
   if not loc.path:match "/$" then
