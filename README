@@ -29,9 +29,9 @@ Features:
 
 Prerequisites:
 
-* Lua 5.3 (Lua 5.2 might work, but not fully tested)
-* Lpeg 1.0.0 or higher
-* LibreSSL 2.5.0 or higher
+* Lua >= 5.3 (Lua 5.2 might work, but not fully tested)
+* Lpeg >= 1.0.0
+* libretls >= 3.3.4 or LibreSSL >= 2.5.0
 * GNU libmagic (NOTE:  This is NOT image manipulation, but file
 	identification)
 * A whole bunch of Lua modules, availble at:
@@ -41,10 +41,8 @@ Prerequisites:
 Installation:
 
 This will require some work.  You will need to download the modules listed
-above from Github and get them installed.  The lua-conmanorg repository will
-take some futzing around to get it compiled (first hint:  remove any mention
-of tcc in the Makefile).  But once you have all the prerequisites installed,
-the server should just work.  
+above from Github and get them installed.  Out once you have all the
+prerequisites installed, the server should just work.
 
 Bulding:
 
