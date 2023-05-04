@@ -179,7 +179,7 @@ function handler(conf,auth,loc,pathinfo,ios)
       end
     end
     
-    local name = conf.directory .. "/" .. dir
+    local name     = conf.directory .. "/" .. dir
     local info,err = fsys.lstat(name)
     
     if not info then

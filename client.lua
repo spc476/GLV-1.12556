@@ -176,10 +176,10 @@ usage: %s [options] url
 
 local opts =
 {
-  { "c" , "cert"     , true    , function(c) CERT  = c    end },
-  { "k" , "key"      , true    , function(k) KEY   = k    end },
-  { "n" , "noverify" , false   , function()  NOVER = true end },
-  { 'h' , "help"     , false   , function()
+  { "c" , "cert"     , true  , function(c) CERT  = c    end },
+  { "k" , "key"      , true  , function(k) KEY   = k    end },
+  { "n" , "noverify" , false , function()  NOVER = true end },
+  { 'h' , "help"     , false , function()
       io.stderr:write(string.format(usage,arg[0]))
       os.exit(false,true)
     end

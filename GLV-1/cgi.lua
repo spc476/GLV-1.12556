@@ -59,9 +59,9 @@ end
 -- ************************************************************************
 
 local function fdtoios(fd)
-  local newfd   = ios()
-  newfd.__fd    = fd
-  newfd.__co    = coroutine.running()
+  local newfd = ios()
+  newfd.__fd  = fd
+  newfd.__co  = coroutine.running()
   
   newfd.close = function(self)
     nfl.SOCKETS:remove(fd)

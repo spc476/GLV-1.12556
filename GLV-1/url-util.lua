@@ -22,10 +22,10 @@
 -- luacheck: globals esc_auth esc_path esc_query esc_frag
 -- luacheck: ignore 611
 
-local gtypes   = require "org.conman.const.gopher-types"
-local lpeg     = require "lpeg"
-local string   = require "string"
-local table    = require "table"
+local gtypes = require "org.conman.const.gopher-types"
+local lpeg   = require "lpeg"
+local string = require "string"
+local table  = require "table"
 
 local tonumber = tonumber
 local tostring = tostring

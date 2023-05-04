@@ -607,7 +607,7 @@ hosts =
           env =
           {
             LD_PRELOAD = "/var/example.com/lib/debug.so",
-            SETTING   = "host-instance",
+            SETTING    = "host-instance",
           },
         },
         
@@ -632,7 +632,7 @@ hosts =
     {
       ['^/private/bar2/?.*'] =
       {
-        env = { SETTING = 'host-instance' },
+        env    = { SETTING = 'host-instance' },
         envtls = true,
       }
     }
@@ -656,8 +656,8 @@ hosts =
         path      = "/",
         module    = "GLV-1.handlers.filesystem",
         directory = "/var/exmple.org/share",
-        language = "en-US",
-        charset  = "us-ascii",
+        language  = "en-US",
+        charset   = "us-ascii",
       }
     }
   }
