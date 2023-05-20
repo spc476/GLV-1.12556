@@ -229,6 +229,7 @@ function setup_env(auth,program,base,location,directory,di,hconf,gconf)
         env.TLS_CLIENT_NOT_BEFORE = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notbefore)
         env.TLS_CLIENT_NOT_AFTER  = os.date("%Y-%m-%dT%H:%M:%SZ",auth.notafter)
         env.TLS_CLIENT_REMAIN     = remain
+        env.TLS_SNI               = location.host
         
         breakdown(env,"TLS_CLIENT_ISSUER_", auth.issuer)
         breakdown(env,"TLS_CLIENT_SUBJECT_",auth.subject)
