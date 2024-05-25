@@ -96,6 +96,8 @@ local function main(location,usecert,rcount)
     return
   end
   
+  ios:setvbuf('no')
+  
   local okay,err = ios:write(location,"\r\n")
   if not okay then
     io.stderr:write("Error: ios:write() = ",err,"\n")

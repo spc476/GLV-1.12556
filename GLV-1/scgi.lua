@@ -106,6 +106,7 @@ return function(auth,program,directory,base,location,ios)
     return 40
   end
   
+  inp:setvbuf('no')
   inp:write(tostring(#tenv),":",tenv,",0:,")
   local status = gi.handle_output(ios,inp,program)
   inp:close()
