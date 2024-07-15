@@ -270,7 +270,14 @@ function handle_output(ios,inp,program)
     return 40
   end
   
-  headers = parse_headers:match(headers)
+  local pheaders = parse_headers:match(headers)
+  if not pheaders then
+    syslog('error',"%s: Bad headers? %q",program,headers or "<no headers>")
+    ios:write("40\r\n")
+    return 40
+  end
+  
+  headers      = pheaders
   local status = headers['Status'] or 20
   
   if headers['Location'] then
