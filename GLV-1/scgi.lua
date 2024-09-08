@@ -41,14 +41,14 @@ return function(auth,program,directory,base,location,ios)
   
   if not gconf and not hconf and not dconf then
     syslog('error',"SCGI called, but SCGI not configured!")
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
   if dconf == false
   or hconf == false and dconf == nil then
     syslog('error',"SCGI called, but SCGI not configured!")
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
@@ -63,20 +63,20 @@ return function(auth,program,directory,base,location,ios)
   local scgiurl,err = fsys.readlink(program)
   if not scgiurl then
     syslog('error',"SCGI: readlink() = %s",errno[err])
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
   local scgiloc = url:match(scgiurl)
   if not scgiloc then
     syslog('error',"SCGI: bad link %q",scgiurl)
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
   if scgiloc.scheme ~= 'scgi' then
     syslog('error',"SCGI: bad scheme %q",scgiurl)
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
@@ -85,7 +85,7 @@ return function(auth,program,directory,base,location,ios)
   if scgiloc.host then
     if not scgiloc.port then
       syslog('error',"SCGI: %q missing port",scgiurl)
-      ios:write("40\r\n")
+      ios:write("40 \r\n")
       return 40
     end
     
@@ -93,7 +93,7 @@ return function(auth,program,directory,base,location,ios)
   else
     if scgiloc.path == "" then
       syslog('error',"SCGI: %q missing path",scgiurl)
-      ios:write("40\r\n")
+      ios:write("40 \r\n")
       return 40
     end
     
@@ -102,7 +102,7 @@ return function(auth,program,directory,base,location,ios)
   
   local inp = tcp.connecta(addr,5)
   if not inp then
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   

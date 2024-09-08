@@ -266,14 +266,14 @@ function handle_output(ios,inp,program)
   
   if not headers then
     syslog('error',"%s: is this a *GatewayInterface program?",program)
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
   local pheaders = parse_headers:match(headers)
   if not pheaders then
     syslog('error',"%s: Bad headers? %q",program,headers or "<no headers>")
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   

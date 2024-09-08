@@ -62,7 +62,7 @@ function handler(conf,_,_,_,ios)
     local f,err = io.open(conf.file,'rb')
     if not f then
       syslog('error',"%s: %s",conf.file,err)
-      ios:write("51\r\n")
+      ios:write("51 \r\n")
       return 51
     end
     
@@ -79,14 +79,14 @@ function handler(conf,_,_,_,ios)
   
   if fsys.access(conf.file,'x') then
     syslog('error',"%s: can only serve non-executable files",conf.file)
-    ios:write("40\r\n")
+    ios:write("40 \r\n")
     return 40
   end
   
   local okay,err = fsys.access(conf.file,'r')
   if not okay then
     syslog('error',"%s: %s",conf.file,errno[err])
-    ios:write("51\r\n")
+    ios:write("51 \r\n")
     return 51
   end
   

@@ -122,7 +122,7 @@ function handler(conf,auth,loc,pathinfo,ios)
       local f,err = io.open(file,"rb")
       if not f then
         syslog('error',"%s: %s",file,err)
-        ios:write("51\r\n")
+        ios:write("51 \r\n")
         return 51
       end
       
@@ -142,7 +142,7 @@ function handler(conf,auth,loc,pathinfo,ios)
     end
     
     if not fsys.access(file,"r") then
-      ios:write("51\r\n")
+      ios:write("51 \r\n")
       return 51
     end
     
@@ -161,7 +161,7 @@ function handler(conf,auth,loc,pathinfo,ios)
   -- -----------------------------------------------------------------------
   
   if not pathinfo:match "^/" then
-    ios:write("51\r\n")
+    ios:write("51 \r\n")
     return 51
   end
   
@@ -174,7 +174,7 @@ function handler(conf,auth,loc,pathinfo,ios)
     
     for _,pattern in ipairs(conf.no_access) do
       if segment:match(pattern) then
-        ios:write("51\r\n")
+        ios:write("51 \r\n")
         return 51
       end
     end
@@ -184,7 +184,7 @@ function handler(conf,auth,loc,pathinfo,ios)
     
     if not info then
       syslog('error',"fsys.stat(%q) = %s",name,errno[err])
-      ios:write("51\r\n")
+      ios:write("51 \r\n")
       return 51
     end
     
@@ -194,7 +194,7 @@ function handler(conf,auth,loc,pathinfo,ios)
       -- -------------------------------------------
       if not fsys.access(name,"x") then
         syslog('error',"access(%q) failed",dir)
-        ios:write("51\r\n")
+        ios:write("51 \r\n")
         return 51
       end
     elseif info.mode.type == 'file' then
@@ -206,7 +206,7 @@ function handler(conf,auth,loc,pathinfo,ios)
       local base = loc.path:sub(1,e)
       return scgi(auth,name,conf,base,loc,ios)
     else
-      ios:write("51\r\n")
+      ios:write("51 \r\n")
       return 51
     end
   end

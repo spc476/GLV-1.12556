@@ -44,13 +44,13 @@ end
 function handler(conf,auth,loc,pathinfo,ios)
   local user,path = pathinfo:match("^/([^/]+)(/?.*)")
   if not user then
-    ios:write("51\r\n")
+    ios:write("51 \r\n")
     return 51
   end
   
   local userdir = getuserdir(user) .. "/" .. conf.directory
   if not fsys.access(userdir,"rx") then
-    ios:write("51\r\n")
+    ios:write("51 \r\n")
     return 51
   end
   
