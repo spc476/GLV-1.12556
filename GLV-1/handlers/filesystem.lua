@@ -183,7 +183,9 @@ function handler(conf,auth,loc,pathinfo,ios)
     local info,err = fsys.lstat(name)
     
     if not info then
-      syslog('error',"fsys.stat(%q) = %s",name,errno[err])
+      if err ~= errno.ENOENT then
+        syslog('error',"fsys.stat(%q) = %s",name,errno[err])
+      end
       ios:write("51 \r\n")
       return 51
     end
